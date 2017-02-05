@@ -82,7 +82,8 @@ default_stan_control <- function(prior, adapt_delta = NULL,
                           "R2" = 0.99,
                           "hs" = 0.99,
                           "hs_plus" = 0.99,
-                          # "t" = if (any(prior$df <= 2)) 0.99 else 0.95,
+                          "lasso" = 0.99,
+                          "product_normal" = 0.99,
                           0.95) # default
   }
   nlist(adapt_delta, max_treedepth)
@@ -667,4 +668,19 @@ validate_newdata <- function(x) {
     stop("NAs are not allowed in 'newdata'.", call. = FALSE)
 
   as.data.frame(x)
+}
+
+# Check that a stanfit object (or list returned by rstan::optimizing) is valid
+#
+check_stanfit <- function(x) {
+  if (is.list(x)) {
+    if (!all(c("par", "value") %in% names(x)))
+      stop("Invalid object produced please report bug")
+  }
+  else {
+    stopifnot(is(x, "stanfit"))
+    if (x@mode != 0)
+      stop("Invalid stanfit object produced please report bug")
+  }
+  return(TRUE)
 }

@@ -118,6 +118,8 @@ test_that("plot.stanreg ok for vb", {
                regexp = "only available for models fit using MCMC")
   expect_error(plot(fitvb, "rhat_hist"), 
                regexp = "only available for models fit using MCMC")
+  expect_error(plot(fitvb, "mcmc_neff"), 
+               regexp = "only available for models fit using MCMC")
 })
 
 
@@ -127,8 +129,9 @@ test_that("pairs method ok", {
   requireNamespace("rstan")
   requireNamespace("KernSmooth")
   expect_silent(pairs(fit, pars = c("period2", "log-posterior")))
-  expect_error(pairs(fit, pars = "b[(Intercept) herd:15]"), 
-               regexp = "does not yet allow group-level parameters")
+  expect_silent(pairs(fit, pars = "b[(Intercept) herd:15]", regex_pars = "Sigma"))
+  expect_silent(pairs(fit, pars = "b[(Intercept) herd:15]", regex_pars = "Sigma", 
+                      log = TRUE, condition = "lp__"))
   expect_error(pairs(fitvb), regexp = "only available for models fit using MCMC")
   expect_error(pairs(fito), regexp = "only available for models fit using MCMC")
 })

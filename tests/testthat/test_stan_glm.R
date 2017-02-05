@@ -58,8 +58,9 @@ test_that("stan_glm throws appropriate errors, warnings, and messages", {
                regexp = "'QR' and 'sparse' cannot both be TRUE")
   
   # message: recommend QR if using meanfield vb
-  expect_message(capture.output(stan_glm(f, family = "poisson", algorithm = "meanfield", seed = SEED)), 
-                 regexp = "Setting 'QR' to TRUE can often be helpful")
+  # expect_message(capture.output(stan_glm(f, family = "poisson",
+  #                                        algorithm = "meanfield", seed = SEED)), 
+  #                regexp = "Setting 'QR' to TRUE can often be helpful")
   
   # require intercept for certain family and link combinations
   expect_error(stan_glm(counts ~ -1 + outcome + treatment, 
@@ -84,6 +85,10 @@ test_that("stan_glm throws appropriate errors, warnings, and messages", {
                "outcome values must be positive")
   expect_error(stan_glm(cbind(1:10, 1:10) ~ 1, family = "gaussian"), 
                "should not have multiple columns")
+  
+  # prior_aux can't be NULL if prior_PD is TRUE
+  expect_error(stan_glm(mpg ~ wt, data = mtcars, prior_aux = NULL, prior_PD = TRUE),
+               "'prior_aux' can't be NULL if 'prior_PD' is TRUE")
 })
 
 context("stan_glm (gaussian)")
@@ -257,24 +262,103 @@ test_that("stan_glm returns expected result for binomial example", {
 
 
 context("stan_glm (other tests)")
-test_that("model with hs_plus prior doesn't error", {
-  expect_output(fit <- stan_glm(mpg ~ ., data = mtcars, prior = hs_plus(), 
+test_that("model with hs prior doesn't error", {
+  expect_output(fit <- stan_glm(mpg ~ ., data = mtcars, prior = hs(4, 2, .5), 
                          seed = SEED, algorithm = "meanfield", QR = TRUE), 
+                regexp = "Automatic Differentiation Variational Inference")
+  expect_output(print(prior_summary(fit)), "~ hs(df = ", fixed = TRUE)
+})
+
+context("stan_glm (other tests)")
+test_that("model with hs_plus prior doesn't error", {
+  expect_output(fit <- stan_glm(mpg ~ ., data = mtcars, prior = hs_plus(4, 1, 2, .5), 
+                                seed = SEED, algorithm = "meanfield", QR = TRUE), 
                 regexp = "Automatic Differentiation Variational Inference")
   expect_output(print(prior_summary(fit)), "~ hs_plus(df1 = ", fixed = TRUE)
 })
 
+test_that("model with laplace prior doesn't error", {
+  expect_output(fit <- stan_glm(mpg ~ ., data = mtcars, prior = laplace(), 
+                         seed = SEED, algorithm = "meanfield", QR = FALSE), 
+                regexp = "Automatic Differentiation Variational Inference")
+  expect_output(print(prior_summary(fit)), 
+                "~ laplace(", fixed = TRUE)
+})
+
+test_that("model with lasso prior doesn't error", {
+  expect_output(fit <- stan_glm(mpg ~ ., data = mtcars, prior = lasso(), 
+                         seed = SEED, algorithm = "meanfield", QR = FALSE), 
+                regexp = "Automatic Differentiation Variational Inference")
+  expect_output(print(prior_summary(fit)), 
+                "~ lasso(", fixed = TRUE)
+}) 
+
+test_that("model with product_normal prior doesn't error", {
+  expect_output(fit <- stan_glm(mpg ~ ., data = mtcars, 
+                                prior = product_normal(df = 3, scale = 0.5), 
+                                seed = SEED, algorithm = "meanfield", QR = FALSE), 
+                regexp = "Automatic Differentiation Variational Inference")
+  expect_output(print(prior_summary(fit)), "~ product_normal(df = ", fixed = TRUE)
+})
+
 test_that("prior_aux argument is detected properly", {
   fit <- stan_glm(mpg ~ wt, data = mtcars, iter = 10, chains = 1, seed = SEED, 
-                  refresh = -1, prior_aux = exponential(5))
+                  refresh = -1, prior_aux = exponential(5), 
+                  prior = normal(autoscale=FALSE), 
+                  prior_intercept = normal(autoscale=FALSE))
   expect_identical(
     fit$prior.info$prior_aux, 
     list(dist = "exponential", 
-         location = NULL, scale = NULL, df = NULL, rate = 5, 
+         location = NULL, scale = NULL, 
+         adjusted_scale = 1/5 * sd(mtcars$mpg),
+         df = NULL, rate = 5, 
          aux_name = "sigma")
   )
   expect_output(print(prior_summary(fit)), 
                 "~ exponential(rate = ", fixed = TRUE)
+  expect_output(print(prior_summary(fit)), 
+                "**adjusted scale", fixed = TRUE)
+})
+
+test_that("prior_aux can be NULL", {
+  fit <- stan_glm(mpg ~ wt, data = mtcars, iter = 10, chains = 1, seed = SEED, 
+                  refresh = -1, prior_aux = NULL)
+  expect_output(print(prior_summary(fit)), 
+                "~ flat", fixed = TRUE)
+})
+
+test_that("autoscale works (insofar as it's reported by prior_summary)", {
+  suppressWarnings(capture.output(
+    fit <- stan_glm(mpg ~ wt, data = mtcars, iter = 5, 
+                    prior = normal(autoscale=FALSE), 
+                    prior_intercept = normal(autoscale=FALSE), 
+                    prior_aux = cauchy(autoscale=FALSE)), 
+    fit2 <- update(fit, prior = normal())
+  ))
+  
+  out <- capture.output(print(prior_summary(fit)))
+  expect_false(any(grepl("adjusted", out)))
+  
+  expect_output(
+    print(prior_summary(fit2)), 
+    "**adjusted scale", 
+    fixed = TRUE
+  )
+})
+test_that("prior_options is deprecated", {
+  expect_warning(
+    ops <- prior_options(scaled = FALSE, prior_scale_for_dispersion = 3), 
+    "deprecated and will be removed"
+  )
+  expect_warning(
+    capture.output(fit <- stan_glm(mpg ~ wt, data = mtcars, iter = 5, prior_ops = ops)),
+    "Setting prior scale for aux to value specified in 'prior_options'"
+  )
+  expect_output(
+    print(prior_summary(fit)), 
+    "~ half-cauchy(location = 0, scale = 3)", 
+    fixed = TRUE
+  )
 })
 
 test_that("empty interaction levels dropped", {
