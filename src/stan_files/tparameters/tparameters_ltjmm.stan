@@ -10,6 +10,9 @@
   // group level params
   matrix[bK1 >  0 ? bN1 : 0, bK1] bMat1; // for grouping factor 1
   matrix[bK2 >  0 ? bN2 : 0, bK2] bMat2; // for grouping factor 2
+  
+  // group factor 1 raw random intercepts
+  matrix[bK1 >  0 ? bN1 : 0, M-1] bMat10; // random intercepts for grouping factor 1
 
   // population level params, auxiliary params
   if (has_aux[1] == 1) {
@@ -77,4 +80,13 @@
       bMat2 = (bSd2[1] * z_bMat2)';
     else if (bK2 > 1)
       bMat2 = (diag_pre_multiply(bSd2, bCholesky2) * z_bMat2)';
+  }
+  
+  // impose consraint on bMat1 such that random intercepts sum to zero for each subject
+  // this allow identifiability of latent time shift parameter
+  for(i in 1:bN1) {
+    for(j in 1:(M-1)){
+      bMat10[i,j] = bMat1[1, bK1_idx[j,1]];
+    }
+    bMat1[i, bK1_idx[M,1]] = -sum(bMat10[i,]);
   }

@@ -39,7 +39,7 @@
     sqrt_y3 = sqrt(yReal3);
     log_y3 = log(yReal3);
   }
-
+  
   // data for decov prior
   if (prior_dist_for_cov == 1) {
     for (i in 1:t) {

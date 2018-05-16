@@ -16,23 +16,26 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-# Function to create a stanmvreg object (fitted model object)
+# Function to create a stanltreg object (fitted model object)
 #
-# @param object A list returned by a call to any of: stan_jm, stan_mvmer
-# @return A stanmvreg object
+# @param object A list returned by a call to any of: stan_jm, stan_ltjmm
+# @return A stanltreg object
 #
-stanmvreg <- function(object) {
-  
+stanltreg <- function(object) {
   opt        <- object$algorithm == "optimizing"
   stanfit    <- object$stanfit
   M          <- object$M
-  is_mvmer   <- is.mvmer(object)
+  is_ltjmm   <- is.ltjmm(object)
   is_surv    <- is.surv(object)
   is_jm      <- is.jm(object)
-  stub       <- if (is_jm) "Long" else "y"
-  
+  if (is_jm) {
+    stub <- "Long"
+  } else {
+    stub <- "y"
+  }
+
   if (opt) {
-    stop("Optimisation not implemented for stanmvreg objects.")
+    stop("Optimisation not implemented for stanltreg objects.")
   } else {
     stan_summary <- make_stan_summary(stanfit)
     nms <- collect_nms(rownames(stan_summary), M, stub = get_stub(object))
@@ -40,7 +43,7 @@ stanmvreg <- function(object) {
     ses <- list()
     
     # Coefs and SEs for longitudinal submodel(s)                    
-    if (is_mvmer) {
+    if (is_ltjmm) {
       y_coefs <- lapply(1:M, function(m)
         stan_summary[c(nms$y[[m]], nms$y_b[[m]]), select_median(object$algorithm)])
       y_stanmat <- lapply(1:M, function(m) 
@@ -97,7 +100,7 @@ stanmvreg <- function(object) {
     runtime       = if (object$algorithm == "sampling") times else NULL,
     stan_summary, stanfit
   )
-  if (is_mvmer) {
+  if (is_ltjmm) {
     out$cnms      <- object$cnms
     out$flevels   <- object$flevels
     out$n_markers <- object$M
@@ -106,7 +109,7 @@ stanmvreg <- function(object) {
     out$family    <- list_nms(object$family, M, stub)
     out$glmod     <- list_nms(object$glmod, M, stub)
     out$data      <- if (!is_jm) list_nms(object$data, M, stub) else NULL
-    classes <- c("stanmvreg", "stanreg", "lmerMod")
+    classes <- c("stanltreg", "stanmvreg", "stanreg", "lmerMod")
   }
   if (is_jm) {
     out$id_var    <- object$id_var

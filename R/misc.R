@@ -967,7 +967,7 @@ get_m_stub <- function(m, stub = "Long") {
 #
 # @param object A stanmvreg object
 get_stub <- function(object) {
-  if (is.jm(object)) "Long" else if (is.mvmer(object)) "y" else NULL  
+  if (is.jm(object)) "Long" else if (is.mvmer(object) | is.ltjmm(object)) "y" else NULL  
 } 
 
 # Separates a names object into separate parts based on the longitudinal, 

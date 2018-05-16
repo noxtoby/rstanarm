@@ -1,12 +1,25 @@
+  matrix[yNeta[1],yK[1]] yXlt1; // fe design matrix with latent time shift
+  matrix[yNeta[2],yK[2]] yXlt2;
+  matrix[yNeta[3],yK[3]] yXlt3;
+
   vector[yNeta[1]] yEta1; // linear predictor
   vector[yNeta[2]] yEta2;
   vector[yNeta[3]] yEta3;
+  
+  sigma_Delta ~ cauchy(0, 2.5);
+  Delta ~ normal(0, sigma_Delta);
 
   // Linear predictor for submodel 1
   if (M > 0) {
     int bMat1_colshift = 0; // column shift in bMat1
     int bMat2_colshift = 0; // column shift in bMat2
-    yEta1 = evaluate_eta(yX1, y1_Z1, y1_Z2, y1_Z1_id, y1_Z2_id, yGamma1, yBeta1,
+    for(i in 1:yK[1]){
+      yXlt1[,i] = yX1[,i];
+    }
+    for(j in 1:yNeta[1]){
+      yXlt1[j,lt_idx[1]] = yXlt1[j,lt_idx[1]] + Delta[y1_Z1_id[j]];
+    }
+    yEta1 = evaluate_eta(yXlt1, y1_Z1, y1_Z2, y1_Z1_id, y1_Z2_id, yGamma1, yBeta1,
                          bMat1, bMat2, bMat1_colshift, bMat2_colshift, intercept_type[1]);
   }
 
@@ -14,7 +27,13 @@
   if (M > 1) {
     int bMat1_colshift = bK1_len[1]; // column shift in bMat1
     int bMat2_colshift = bK2_len[1]; // column shift in bMat2
-    yEta2 = evaluate_eta(yX2, y2_Z1, y2_Z2, y2_Z1_id, y2_Z2_id, yGamma2, yBeta2,
+    for(i in 1:yK[2]){
+      yXlt2[,i] = yX2[,i];
+    }
+    for(j in 1:yNeta[2]){
+      yXlt2[j,lt_idx[2]] = yXlt2[j,lt_idx[2]] + Delta[y2_Z1_id[j]];
+    }
+    yEta2 = evaluate_eta(yXlt2, y2_Z1, y2_Z2, y2_Z1_id, y2_Z2_id, yGamma2, yBeta2,
                          bMat1, bMat2, bMat1_colshift, bMat2_colshift, intercept_type[2]);
   }
 
@@ -22,7 +41,13 @@
   if (M > 2) {
     int bMat1_colshift = sum(bK1_len[1:2]); // column shift in bMat1
     int bMat2_colshift = sum(bK2_len[1:2]); // column shift in bMat2
-    yEta3 = evaluate_eta(yX3, y3_Z1, y3_Z2, y3_Z1_id, y3_Z2_id, yGamma3, yBeta3,
+    for(i in 1:yK[3]){
+      yXlt3[,i] = yX3[,i];
+    }
+    for(j in 1:yNeta[3]){
+      yXlt3[j,lt_idx[3]] = yXlt3[j,lt_idx[3]] + Delta[y3_Z1_id[j]];
+    }
+    yEta3 = evaluate_eta(yXlt3, y3_Z1, y3_Z2, y3_Z1_id, y3_Z2_id, yGamma3, yBeta3,
                          bMat1, bMat2, bMat1_colshift, bMat2_colshift, intercept_type[3]);
   }
 

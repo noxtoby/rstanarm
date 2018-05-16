@@ -48,6 +48,15 @@
 #'   be either a single data frame which contains the data for all 
 #'   GLM submodels, or it can be a list of data frames where each
 #'   element of the list provides the data for one of the GLM submodels.
+#' @param lt_var A character string specifying the name of the latent  
+#'   time variable (not in \code{data}) which represents the latent time
+#'   shift paramter. This variable will use same grouping 
+#' @param id_var A character string specifying the name of the variable in
+#'   \code{data} which distinguishes between individuals. This can be
+#'   left unspecified if there is only one grouping factor (which is assumed
+#'   to be the individual). If there is more than one grouping factor (i.e.
+#'   clustering beyond the level of the individual) then the \code{id_var}
+#'   argument must be specified.
 #' @param family The family (and possibly also the link function) for the 
 #'   GLM submodel(s). See \code{\link[lme4]{glmer}} for details. 
 #'   If fitting a multivariate GLM, then this can optionally be a
@@ -66,16 +75,16 @@
 #'   That is, different priors can optionally be specified for each of the GLM  
 #'   submodels. If a list is not provided, then the same prior distributions are 
 #'   used for each GLM submodel. Note that the \code{"product_normal"} prior is
-#'   not allowed for \code{stan_mvmer}.
+#'   not allowed for \code{stan_ltjmm}.
 #' @param prior_covariance Cannot be \code{NULL}; see \code{\link{priors}} for
 #'   more information about the prior distributions on covariance matrices.
 #'   Note however that the default prior for covariance matrices in 
-#'   \code{stan_mvmer} is slightly different to that in \code{\link{stan_glmer}} 
+#'   \code{stan_ltjmm} is slightly different to that in \code{\link{stan_glmer}} 
 #'   (the details of which are described on the \code{\link{priors}} page).
 #' @param init The method for generating initial values. See
 #'   \code{\link[rstan]{stan}}.
 #'   
-#' @details The \code{stan_mvmer} function can be used to fit a multivariate
+#' @details The \code{stan_ltjmm} function can be used to fit a multivariate
 #'   generalized linear model (GLM) with group-specific terms. The model consists
 #'   of distinct GLM submodels, each which contains group-specific terms; within
 #'   a grouping factor (for example, patient ID) the grouping-specific terms are
@@ -91,12 +100,13 @@
 #'   the priors distributions that are available for the covariance matrices, 
 #'   the regression coefficients and the intercept and auxiliary parameters.
 #'
-#' @return A \link[=stanreg-objects]{stanmvreg} object is returned.
+#' @return A \link[=stanreg-objects]{stanltreg} object is returned.
 #' 
-#' @seealso \code{\link{stan_glmer}}, \code{\link{stan_jm}},
-#'   \code{\link{stanreg-objects}}, \code{\link{stanmvreg-methods}}, 
-#'   \code{\link{print.stanmvreg}}, \code{\link{summary.stanmvreg}},
-#'   \code{\link{posterior_predict}}, \code{\link{posterior_interval}}.
+#' @seealso \code{\link{stan_mvmer}}, \code{\link{stan_glmer}}, 
+#'   \code{\link{stan_jm}}, \code{\link{stanreg-objects}},
+#'   \code{\link{stanltreg-methods}}, \code{\link{print.stanltreg}}, 
+#'   \code{\link{summary.stanltreg}}, \code{\link{posterior_predict}},
+#'   \code{\link{posterior_interval}}.
 #'    
 #' @examples
 #' \donttest{
@@ -105,11 +115,12 @@
 #' # group-specific intercept from the first submodel (logBili) is assumed to
 #' # be correlated with the group-specific intercept and linear slope in the 
 #' # second submodel (albumin)
-#' f1 <- stan_mvmer(
+#' f1 <- stan_ltjmm(
 #'         formula = list(
-#'           logBili ~ year + (1 | id), 
-#'           albumin ~ sex + year + (year | id)),
-#'         data = pbcLong, 
+#'           logBili ~ I(year+lt) + (1 | id), 
+#'           albumin ~ sex + I(year+lt) + (year | id)),
+#'         data = pbcLong,
+#'         lt_var = 'lt', 
 #'         # this next line is only to keep the example small in size!
 #'         chains = 1, cores = 1, seed = 12345, iter = 1000)
 #' summary(f1) 
@@ -119,16 +130,18 @@
 #' # gaussian outcome. We will artificially create the bernoulli
 #' # outcome by dichotomising log serum bilirubin
 #' pbcLong$ybern <- as.integer(pbcLong$logBili >= mean(pbcLong$logBili))
-#' f2 <- stan_mvmer(
+#' f2 <- stan_ltjmm(
 #'         formula = list(
-#'           ybern ~ year + (1 | id), 
-#'           albumin ~ sex + year + (year | id)),
+#'           ybern ~ I(year+lt) + (1 | id), 
+#'           albumin ~ sex + I(year+lt) + (year | id)),
 #'         data = pbcLong,
+#'         lt_var = 'lt', 
 #'         family = list(binomial, gaussian),
 #'         chains = 1, cores = 1, seed = 12345, iter = 1000)
 #' }
 #' 
-stan_mvmer <- function(formula, data, family = gaussian, weights,				          
+stan_ltjmm <- function(formula, data, lt_var = NULL, lt_formula = NULL,
+                       id_var = NULL, family = gaussian, weights,	
                        prior = normal(), prior_intercept = normal(), 
                        prior_aux = cauchy(0, 5),
                        prior_covariance = lkj(), prior_PD = FALSE, 
@@ -154,9 +167,15 @@ stan_mvmer <- function(formula, data, family = gaussian, weights,
   # Formula
   formula <- validate_arg(formula, "formula"); M <- length(formula)
 	if (M > 3L)
-	  stop("'stan_mvmer' is currently limited to a maximum of 3 outcomes.")
+	  stop("'stan_ltjmm' is currently limited to a maximum of 3 outcomes.")
   
   # Data
+  if(lt_var %in% names(data)){
+    stop("Remove variable '", lt_var, "' from data, or choose another character string to ", 
+      "denote latent time variable.")
+  }
+  data[, lt_var] <- 0 # insert placeholder 0s
+  lt_term <- as.character(lt_formula)[2]
   data <- validate_arg(data, "data.frame", validate_length = M)  
   data <- xapply(formula, data, FUN = get_all_vars) # drop additional vars
   
@@ -183,7 +202,8 @@ stan_mvmer <- function(formula, data, family = gaussian, weights,
   # Fit model
   #----------- 
   
-  stanfit <- stan_jm.fit(formulaLong = formula, dataLong = data, family = family,
+  stanfit <- stan_ltjmm.fit(formulaLong = formula, dataLong = data, 
+                         lt_var = lt_var, lt_term = lt_term, id_var = id_var, family = family,
                          weights = weights, priorLong = prior, 
                          priorLong_intercept = prior_intercept, priorLong_aux = prior_aux, 
                          prior_covariance = prior_covariance, prior_PD = prior_PD, 
@@ -203,9 +223,17 @@ stan_mvmer <- function(formula, data, family = gaussian, weights,
   
   fit <- nlist(stanfit, formula, family, weights, M, cnms, flevels, n_grps, n_yobs, 
                algorithm, terms, glmod = y_mod, data, prior.info = prior_info, 
-               stan_function = "stan_mvmer", call = match.call(expand.dots = TRUE))
+               stan_function = "stan_ltjmm", call = match.call(expand.dots = TRUE))
   
-  out <- stanmvreg(fit)
+  out <- stanltreg(fit)
   return(out)
 }
+
+# Test if object contains a latent time joint mixed effect model (ltjmm)
+#
+# @param x An object to be tested.
+is.ltjmm <- function(x) {
+  isTRUE(x$stan_function %in% c("stan_ltjmm"))
+}
+
 

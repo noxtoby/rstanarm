@@ -17,13 +17,14 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 # Internal model fitting function for models estimated using 
-# \code{stan_mvmer} or \code{stan_jm}.
+# \code{stan_ltjmm}.
 # 
-# See \code{stan_jm} for a description of the arguments to the 
-# \code{stan_jm.fit} function call.
+# See \code{stan_ltjmm} for a description of the arguments to the 
+# \code{stan_ltjmm.fit} function call.
 #
-stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL, 
-                        dataEvent = NULL, time_var, id_var,  family = gaussian, 
+stan_ltjmm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL, 
+                        dataEvent = NULL, time_var = NULL, id_var = NULL,  
+                        lt_var = NULL, lt_term = NULL, family = gaussian,
                         assoc = "etavalue", lag_assoc = 0, grp_assoc, 
                         epsilon = 1E-5, basehaz = c("bs", "weibull", "piecewise"), 
                         basehaz_ops, qnodes = 15, init = "prefit", weights,					          
@@ -54,6 +55,7 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
   if (missing(weights))     weights     <- NULL
   if (missing(id_var))      id_var      <- NULL
   if (missing(time_var))    time_var    <- NULL
+  if (missing(lt_var))      lt_var   <- NULL
   if (missing(grp_assoc))   grp_assoc   <- NULL
 
   if (!is.null(weights)) 
@@ -117,12 +119,10 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
   flevels <- get_common_flevels(y_flist)
   
   # Ensure id_var is a valid grouping factor in all submodels
-  if (is_jm) {
-    id_var <- check_id_var(id_var, y_cnms, y_flist)
-    id_list <- check_id_list(id_var, y_flist)
-    if (!is.null(weights))
-      weights <- check_weights(weights, id_var)
-  }
+  id_var <- check_id_var(id_var, y_cnms, y_flist)
+  id_list <- check_id_list(id_var, y_flist)
+  if (!is.null(weights))
+    weights <- check_weights(weights, id_var)
   
   # Observation weights
   y_weights <- lapply(y_mod, handle_weights, weights, id_var)
@@ -204,7 +204,7 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
   standata$yNobs <- 
     fetch_array(y_mod, "x", "N", pad_length = 3)
   standata$yNeta <- 
-    fetch_array(y_mod, "x", "N", pad_length = 3) # same as Nobs for stan_mvmer
+    fetch_array(y_mod, "x", "N", pad_length = 3) # same as Nobs for stan_ltjmm
   standata$yK <- 
     fetch_array(y_mod, "x", "K", pad_length = 3)
   
@@ -230,6 +230,9 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
   standata$yXbar2 <- if (M > 1) as.array(X_bar[[2]]) else as.array(double(0))
   standata$yXbar3 <- if (M > 2) as.array(X_bar[[3]]) else as.array(double(0))
   
+  # indices for latent time term
+  standata$lt_idx <- unlist(lapply(X, function(x) which(colnames(x)==lt_term)))
+  
   # Data for group specific terms - group factor 1
   b1_varname <- cnms_nms[[1L]] # name of group factor 1
   b1_nvars <- fetch_(y_mod, "z", "nvars", b1_varname, 
@@ -243,7 +246,7 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
   standata$bK1 <- sum(b1_nvars)
   standata$bK1_len <- as.array(b1_nvars)
   standata$bK1_idx <- get_idx_array(b1_nvars)
-  
+
   Z1 <- fetch(y_mod, "z", "z", b1_varname)
   Z1 <- lapply(Z1, transpose)
   Z1 <- lapply(Z1, convert_null, "matrix")
@@ -448,7 +451,7 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
       c(t(sapply(nms_i, paste0, ":", flevels[[nm]])))
     }
   })
-  
+    
   # Names for Sigma matrix
   Sigma_nms <- get_Sigma_nms(cnms)
   
@@ -609,7 +612,7 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
     # Number of association parameters
     a_K <- get_num_assoc_pars(assoc, a_mod)
     
-    # Use a stan_mvmer variational bayes model fit for:
+    # Use a stan_ltjmm variational bayes model fit for:
     # - obtaining initial values for joint model parameters
     # - obtaining appropriate scaling for priors on association parameters
     vbdots <- list(...)
@@ -617,7 +620,7 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
     for (i in dropargs) 
       vbdots[[i]] <- NULL
     vbpars <- pars_to_monitor(standata, is_jm = FALSE)
-    vbargs <- c(list(stanmodels$mvmer, pars = vbpars, data = standata, 
+    vbargs <- c(list(stanmodels$ltjmm, pars = vbpars, data = standata, 
                      algorithm = "meanfield"), vbdots)
     utils::capture.output(init_fit <- do.call(rstan::vb, vbargs))
     init_new_nms <- c(y_intercept_nms, y_beta_nms,
@@ -882,13 +885,32 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
   # Fit model
   #-----------
   
+  pars_to_monitor_ljtmm <- function (standata, is_jm = FALSE) 
+  {
+      c(if (standata$M > 0 && standata$intercept_type[1]) "yAlpha1", 
+          if (standata$M > 1 && standata$intercept_type[2]) "yAlpha2", 
+          if (standata$M > 2 && standata$intercept_type[3]) "yAlpha3", 
+          if (standata$M > 0 && standata$yK[1]) "yBeta1", if (standata$M > 
+              1 && standata$yK[2]) "yBeta2", if (standata$M > 2 && 
+              standata$yK[3]) "yBeta3", if (is_jm) "e_alpha", if (is_jm && 
+              standata$e_K) "e_beta", if (is_jm && standata$a_K) "a_beta", 
+          if (standata$bK1 > 0) "b1", if (standata$bK2 > 0) "b2", 
+          if (standata$M > 0 && standata$has_aux[1]) "yAux1", if (standata$M > 
+              1 && standata$has_aux[2]) "yAux2", if (standata$M > 
+              2 && standata$has_aux[3]) "yAux3", if (is_jm && length(standata$basehaz_X)) "e_aux", 
+          if (standata$prior_dist_for_cov == 2 && standata$bK1 > 
+              0) "bCov1", if (standata$prior_dist_for_cov == 2 && 
+              standata$bK2 > 0) "bCov2", 'Delta', 'sigma_Delta', if (standata$prior_dist_for_cov == 
+              1 && standata$len_theta_L) "theta_L", "mean_PPD")
+  }
+  
   # call stan() to draw from posterior distribution
-  stanfit <- if (is_jm) stanmodels$jm else stanmodels$mvmer
-  pars <- pars_to_monitor(standata, is_jm = is_jm)
+  stanfit <- if (is_jm) stanmodels$jm else stanmodels$ltjmm
+  pars <- c(pars_to_monitor_ljtmm(standata, is_jm = is_jm))
   if (M == 1L) 
-    cat("Fitting a univariate", if (is_jm) "joint" else "glmer", "model.\n\n")
+    cat("Fitting a univariate", if (is_jm) "joint" else "ltjmm", "model.\n\n")
   if (M  > 1L) 
-    cat("Fitting a multivariate", if (is_jm) "joint" else "glmer", "model.\n\n")
+    cat("Fitting a multivariate", if (is_jm) "joint" else "ltjmm", "model.\n\n")
   if (algorithm == "sampling") {
     cat("Please note the warmup may be much slower than later iterations!\n")             
     sampling_args <- set_jm_sampling_args(
@@ -898,7 +920,7 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
       user_adapt_delta = adapt_delta,
       user_max_treedepth = max_treedepth,
       data = standata, 
-      pars = pars, 
+      pars = pars,
       init = init,
       show_messages = FALSE)
     stanfit <- do.call(sampling, sampling_args)
@@ -952,18 +974,20 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
     }
     
   } # end jm block
-  
   new_names <- c(y_intercept_nms,
                  y_beta_nms,
                  if (is_jm) e_intercept_nms,
                  if (is_jm) e_beta_nms,
                  if (is_jm) e_assoc_nms,                   
-                 if (length(standata$q)) c(paste0("b[", b_nms, "]")),
+                 if (length(standata$q)) paste0("b[", b_nms, "]"),
                  y_aux_nms,
                  if (is_jm) e_aux_nms,
                  paste0("Sigma[", Sigma_nms, "]"),
-                 paste0(stub, 1:M, "|mean_PPD"), 
+                 c(paste0("Delta[", id_list, "]"), "Delta[_NEW_id]"),
+                 "sigma_Delta",
+                 paste0(stub, 1:M, "|mean_PPD"),
                  "log-posterior")
+
   stanfit@sim$fnames_oi <- new_names
   
   stanfit_str <- nlist(.Data = stanfit, prior_info, y_mod, cnms, flevels)

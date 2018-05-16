@@ -25,6 +25,9 @@
     matrix[prior_dist_for_cov == 2 && bK1 >  0 ? bK1 : 0, bK1 >  0 ? bN1 : 0] z_bMat1;
     // cholesky factor of corr matrix (if > 1 random effect)
     cholesky_factor_corr[prior_dist_for_cov == 2 && bK1 > 1 ? bK1 : 0] bCholesky1;
+    // latent time shifts
+    vector[bN1] Delta;
+    real<lower=0> sigma_Delta;
 
   // group level params for second grouping factor
     // group-level sds

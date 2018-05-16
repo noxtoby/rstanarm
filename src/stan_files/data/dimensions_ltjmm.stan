@@ -28,3 +28,5 @@
     int<lower=0> bK2; // total num params
     int<lower=0> bK2_len[3]; // num params in each submodel
     int<lower=0> bK2_idx[3,2]; // beg/end index for group params
+
+  int<lower=0> lt_idx[M]; // index for latent time term of X matrix
