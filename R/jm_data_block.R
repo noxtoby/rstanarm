@@ -1881,26 +1881,23 @@ set_jm_sampling_args <- function(object, cnms, user_dots = list(),
 # @param standata The list of data to pass to Stan
 # @param is_jm A logical
 # @return A character vector
-pars_to_monitor <- function(standata, is_jm = FALSE) {
-  c(if (standata$M > 0 && standata$intercept_type[1]) "yAlpha1", 
-    if (standata$M > 1 && standata$intercept_type[2]) "yAlpha2", 
-    if (standata$M > 2 && standata$intercept_type[3]) "yAlpha3", 
-    if (standata$M > 0 && standata$yK[1]) "yBeta1",
-    if (standata$M > 1 && standata$yK[2]) "yBeta2",
-    if (standata$M > 2 && standata$yK[3]) "yBeta3",
+pars_to_monitor <- function (standata, is_jm = FALSE, is_ltjmm = FALSE) {
+  c(unlist(lapply(1:20, function(i) 
+      if (standata$M > i-1 && standata$intercept_type[i]) paste0("yAlpha", i) else NULL)),
+    unlist(lapply(1:20, function(i) 
+      if (standata$M > i-1 && standata$yK[i]) paste0("yBeta", i) else NULL)),
     if (is_jm) "e_alpha",
     if (is_jm && standata$e_K) "e_beta",
     if (is_jm && standata$a_K) "a_beta",
     if (standata$bK1 > 0) "b1",
     if (standata$bK2 > 0) "b2",
-    if (standata$M > 0 && standata$has_aux[1]) "yAux1",
-    if (standata$M > 1 && standata$has_aux[2]) "yAux2",
-    if (standata$M > 2 && standata$has_aux[3]) "yAux3",
+    unlist(lapply(1:20, function(i) 
+      if (standata$M > i-1 && standata$has_aux[i]) paste0("yAux", i) else NULL)),
     if (is_jm && length(standata$basehaz_X)) "e_aux",
     if (standata$prior_dist_for_cov == 2 && standata$bK1 > 0) "bCov1",
     if (standata$prior_dist_for_cov == 2 && standata$bK2 > 0) "bCov2",
-    if (standata$prior_dist_for_cov == 1 && standata$len_theta_L) "theta_L",
-    "mean_PPD")
+    if (is_ltjmm) c('Delta', 'sigma_Delta'), 
+    if (standata$prior_dist_for_cov == 1 && standata$len_theta_L) "theta_L", "mean_PPD")
 }
 
 # Change the MCMC samples for theta_L to Sigma

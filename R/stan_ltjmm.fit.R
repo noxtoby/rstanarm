@@ -132,8 +132,8 @@ stan_ltjmm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = N
   # Valid prior distributions
   ok_dists <- nlist("normal", student_t = "t", "cauchy", "hs", "hs_plus", 
                     "laplace", "lasso")  # disallow product normal
-  ok_intercept_dists <- ok_dists[1:3]
-  ok_aux_dists <- c(ok_dists[1:3], exponential = "exponential")
+  ok_intercept_dists <- ok_dists[1:20]
+  ok_aux_dists <- c(ok_dists[1:20], exponential = "exponential")
   ok_covariance_dists <- c("decov", "lkj")
   
   y_vecs <- fetch(y_mod, "y", "y")     # used in autoscaling
@@ -196,39 +196,39 @@ stan_ltjmm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = N
   
   # Dimensions
   standata$has_aux <- 
-    fetch_array(y_mod, "has_aux", pad_length = 3)
+    fetch_array(y_mod, "has_aux", pad_length = 20)
   standata$resp_type <- 
-    fetch_array(y_mod, "y", "resp_type", pad_length = 3)
+    fetch_array(y_mod, "y", "resp_type", pad_length = 20)
   standata$intercept_type <- 
-    fetch_array(y_mod, "intercept_type", "number", pad_length = 3)
+    fetch_array(y_mod, "intercept_type", "number", pad_length = 20)
   standata$yNobs <- 
-    fetch_array(y_mod, "x", "N", pad_length = 3)
+    fetch_array(y_mod, "x", "N", pad_length = 20)
   standata$yNeta <- 
-    fetch_array(y_mod, "x", "N", pad_length = 3) # same as Nobs for stan_ltjmm
+    fetch_array(y_mod, "x", "N", pad_length = 20) # same as Nobs for stan_ltjmm
   standata$yK <- 
-    fetch_array(y_mod, "x", "K", pad_length = 3)
+    fetch_array(y_mod, "x", "K", pad_length = 20)
   
   # Response vectors
   Y_integer <- fetch(y_mod, "y", "integer")
-  standata$yInt1 <- if (M > 0) Y_integer[[1]] else as.array(integer(0))  
-  standata$yInt2 <- if (M > 1) Y_integer[[2]] else as.array(integer(0))  
-  standata$yInt3 <- if (M > 2) Y_integer[[3]] else as.array(integer(0)) 
+  for(i in 1:20){
+    standata[[paste0('yInt', i)]] <- if (M > i-1) Y_integer[[i]] else as.array(integer(0))  
+  }
   
   Y_real <- fetch(y_mod, "y", "real")
-  standata$yReal1 <- if (M > 0) Y_real[[1]] else as.array(double(0)) 
-  standata$yReal2 <- if (M > 1) Y_real[[2]] else as.array(double(0)) 
-  standata$yReal3 <- if (M > 2) Y_real[[3]] else as.array(double(0)) 
+  for(i in 1:20){
+    standata[[paste0('yReal', i)]] <- if (M > i-1) Y_real[[i]] else as.array(double(0)) 
+  }
   
   # Population level design matrices
   X <- fetch(y_mod, "x", "xtemp")
-  standata$yX1 <- if (M > 0) X[[1]] else matrix(0,0,0)
-  standata$yX2 <- if (M > 1) X[[2]] else matrix(0,0,0)
-  standata$yX3 <- if (M > 2) X[[3]] else matrix(0,0,0)
+  for(i in 1:20){
+    standata[[paste0('yX', i)]] <- if (M > i-1) X[[i]] else matrix(0,0,0)
+  }
   
   X_bar <- fetch(y_mod, "x", "x_bar")
-  standata$yXbar1 <- if (M > 0) as.array(X_bar[[1]]) else as.array(double(0))
-  standata$yXbar2 <- if (M > 1) as.array(X_bar[[2]]) else as.array(double(0))
-  standata$yXbar3 <- if (M > 2) as.array(X_bar[[3]]) else as.array(double(0))
+  for(i in 1:20){
+    standata[[paste0('yXbar', i)]] <- if (M > i-1) as.array(X_bar[[i]]) else as.array(double(0))
+  }
   
   # indices for latent time term
   standata$lt_idx <- unlist(lapply(X, function(x) which(colnames(x)==lt_term)))
@@ -236,7 +236,7 @@ stan_ltjmm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = N
   # Data for group specific terms - group factor 1
   b1_varname <- cnms_nms[[1L]] # name of group factor 1
   b1_nvars <- fetch_(y_mod, "z", "nvars", b1_varname, 
-                     null_to_zero = TRUE, pad_length = 3)
+                     null_to_zero = TRUE, pad_length = 20)
   b1_ngrps <- fetch_(y_mod, "z", "ngrps", b1_varname)
   if (!n_distinct(b1_ngrps) == 1L)
     stop("The number of groups for the grouping factor '", 
@@ -250,16 +250,16 @@ stan_ltjmm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = N
   Z1 <- fetch(y_mod, "z", "z", b1_varname)
   Z1 <- lapply(Z1, transpose)
   Z1 <- lapply(Z1, convert_null, "matrix")
-  standata$y1_Z1 <- if (M > 0) Z1[[1L]] else matrix(0,0,0)
-  standata$y2_Z1 <- if (M > 1) Z1[[2L]] else matrix(0,0,0)
-  standata$y3_Z1 <- if (M > 2) Z1[[3L]] else matrix(0,0,0)
-  
+  for(i in 1:20){
+    standata[[paste0('y', i, '_Z1')]] <- if (M > i-1) Z1[[i]] else matrix(0,0,0)
+  }
+
   Z1_id <- fetch(y_mod, "z", "group_list", b1_varname)
   Z1_id <- lapply(Z1_id, groups)
   Z1_id <- lapply(Z1_id, convert_null, "arrayinteger")
-  standata$y1_Z1_id <- if (M > 0) Z1_id[[1L]] else as.array(integer(0))
-  standata$y2_Z1_id <- if (M > 1) Z1_id[[2L]] else as.array(integer(0))
-  standata$y3_Z1_id <- if (M > 2) Z1_id[[3L]] else as.array(integer(0))
+  for(i in 1:20){
+    standata[[paste0('y', i, '_Z1_id')]] <- if (M > i-1) Z1_id[[i]] else as.array(integer(0))
+  }
   
   # Data for group specific terms - group factor 2
   if (length(cnms) > 1L) {
@@ -279,16 +279,16 @@ stan_ltjmm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = N
     Z2 <- fetch(y_mod, "z", "z", b2_varname)
     Z2 <- lapply(Z2, transpose)
     Z2 <- lapply(Z2, convert_null, "matrix")
-    standata$y1_Z2 <- if (M > 0) Z2[[1L]] else matrix(0,0,0)
-    standata$y2_Z2 <- if (M > 1) Z2[[2L]] else matrix(0,0,0)
-    standata$y3_Z2 <- if (M > 2) Z2[[3L]] else matrix(0,0,0)
+    for(i in 1:20){
+      standata[[paste0('y', i, '_Z2')]] <- if (M > i-1) Z2[[i]] else matrix(0,0,0)
+    }
     
     Z2_id <- fetch(y_mod, "z", "group_list", b2_varname)
     Z2_id <- lapply(Z2_id, groups)
     Z2_id <- lapply(Z2_id, convert_null, "arrayinteger")
-    standata$y1_Z2_id <- if (M > 0) Z2_id[[1L]] else as.array(integer(0))
-    standata$y2_Z2_id <- if (M > 1) Z2_id[[2L]] else as.array(integer(0))
-    standata$y3_Z2_id <- if (M > 2) Z2_id[[3L]] else as.array(integer(0))
+    for(i in 1:20){
+      standata[[paste0('y', i, '_Z2_id')]] <- if (M > i-1) Z2_id[[i]] else as.array(integer(0))
+    }
     
   } else {
     # no second grouping factor
@@ -296,12 +296,10 @@ stan_ltjmm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = N
     standata$bK2 <- 0L
     standata$bK2_len <- as.array(rep(0,3L))
     standata$bK2_idx <- get_idx_array(rep(0,3L))
-    standata$y1_Z2 <- matrix(0,0,0)
-    standata$y2_Z2 <- matrix(0,0,0)
-    standata$y3_Z2 <- matrix(0,0,0)
-    standata$y1_Z2_id <- as.array(integer(0))
-    standata$y2_Z2_id <- as.array(integer(0))
-    standata$y3_Z2_id <- as.array(integer(0))
+    for(i in 1:20){
+      standata[[paste0('y', i, '_Z2')]] <- matrix(0,0,0)
+      standata[[paste0('y', i, '_Z2_id')]] <- as.array(integer(0))
+    }
   }
   
   # Priors
@@ -324,23 +322,17 @@ stan_ltjmm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = N
     fetch_array(y_prior_aux_stuff, "prior_df")
   
   standata$y_prior_dist <- 
-    fetch_array(y_prior_stuff, "prior_dist", pad_length = 3)
+    fetch_array(y_prior_stuff, "prior_dist", pad_length = 20)
   
   prior_mean <- fetch(y_prior_stuff, "prior_mean")
-  standata$y_prior_mean1 <- if (M > 0) prior_mean[[1]] else as.array(double(0))
-  standata$y_prior_mean2 <- if (M > 1) prior_mean[[2]] else as.array(double(0))
-  standata$y_prior_mean3 <- if (M > 2) prior_mean[[3]] else as.array(double(0))
-  
   prior_scale <- fetch(y_prior_stuff, "prior_scale")
-  standata$y_prior_scale1 <- if (M > 0) as.array(prior_scale[[1]]) else as.array(double(0))
-  standata$y_prior_scale2 <- if (M > 1) as.array(prior_scale[[2]]) else as.array(double(0))
-  standata$y_prior_scale3 <- if (M > 2) as.array(prior_scale[[3]]) else as.array(double(0))
-  
   prior_df <- fetch(y_prior_stuff, "prior_df")
-  standata$y_prior_df1 <- if (M > 0) prior_df[[1]] else as.array(double(0))
-  standata$y_prior_df2 <- if (M > 1) prior_df[[2]] else as.array(double(0))
-  standata$y_prior_df3 <- if (M > 2) prior_df[[3]] else as.array(double(0))
-  
+  for(i in 1:20){
+    standata[[paste0('y_prior_mean', i)]] <- if (M > i-1) prior_mean[[i]] else as.array(double(0))
+    standata[[paste0('y_prior_scale', i)]] <- if (M > i-1) as.array(prior_scale[[i]]) else as.array(double(0))
+    standata[[paste0('y_prior_df', i)]] <- if (M > i-1) prior_df[[i]] else as.array(double(0))
+  }
+
   # hs priors only
   standata$y_global_prior_scale <- fetch_array(y_prior_stuff, "global_prior_scale") 
   standata$y_global_prior_df <- fetch_array(y_prior_stuff, "global_prior_df")
@@ -460,6 +452,7 @@ stan_ltjmm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = N
   #----------------
 
   if (is_jm) { # begin jm block
+    stop('Joint model not yet supported for ltjmm.')
 
     # Fit separate event submodel
     e_mod <- handle_e_mod(formula = formulaEvent, data = dataEvent, 
@@ -481,7 +474,7 @@ stan_ltjmm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = N
     #----------- Prior distributions -----------# 
     
     # Valid prior distributions
-    ok_e_aux_dists <- ok_dists[1:3]
+    ok_e_aux_dists <- ok_dists[1:20]
   
     # Note: *_user_prior_*_stuff objects are stored unchanged for constructing 
     # prior_summary, while *_prior_*_stuff objects are autoscaled
@@ -667,14 +660,14 @@ stan_ltjmm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = N
         inits[["bCholesky2"]] <- as.array(init_means2[sel_bC2,])
       }      
       
-      sel <- c("yGamma1", "yGamma2", "yGamma3", 
-               "z_yBeta1", "z_yBeta2", "z_yBeta3",
-               "yAux1_unscaled", "yAux2_unscaled", "yAux3_unscaled", 
+      sel <- c(paste0("yGamma", 1:20), 
+               paste0("z_yBeta", 1:20), 
+               paste0("yAux", 1:20, "_unscaled"), 
                "bSd1", "bSd2", "z_b", "z_T", "rho", "zeta", "tau", 
-               "yGlobal1", "yGlobal2", "yGlobal3", 
-               "yLocal1", "yLocal2", "yLocal3", 
-               "yMix1", "yMix2", "yMix3", 
-               "yOol1", "yOol2", "yOol3")
+               paste0("yGlobal", 1:20), 
+               paste0("yLocal", 1:20), 
+               paste0("yMix", 1:20), 
+               paste0("yOol", 1:20))
       for (i in sel) {
         sel_i <- grep(paste0("^", i, "\\."), init_nms2)
         if (length(sel_i))
@@ -716,7 +709,7 @@ stan_ltjmm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = N
                            muauc    = "muauc")
         sel <- grep(nm_check, rownames(assoc))
         tmp <- assoc[sel, , drop = FALSE]
-        tmp <- pad_matrix(tmp, cols = 3L, value = FALSE)
+        tmp <- pad_matrix(tmp, cols = 20L, value = FALSE)
         as.integer(as.logical(colSums(tmp > 0)))
       }, assoc = assoc)
     standata$assoc_uses <- t(assoc_uses)
@@ -749,9 +742,9 @@ stan_ltjmm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = N
     
     # Data for calculating eta, slope, auc in GK quadrature 
     N_tmp <- sapply(a_mod, function(x) NROW(x$mod_eta$xtemp))
-    N_tmp <- c(N_tmp, rep(0, 3 - length(N_tmp)))
+    N_tmp <- c(N_tmp, rep(0, 20 - length(N_tmp)))
     standata$nrow_y_Xq <- as.array(as.integer(N_tmp))
-    for (m in 1:3) {
+    for (m in 1:20) {
       for (i in c("eta", "eps", "auc")) {
         nm_check <- switch(i,
                            eta = "^eta|^mu",
@@ -884,29 +877,10 @@ stan_ltjmm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = N
   #-----------
   # Fit model
   #-----------
-  
-  pars_to_monitor_ljtmm <- function (standata, is_jm = FALSE) 
-  {
-      c(if (standata$M > 0 && standata$intercept_type[1]) "yAlpha1", 
-          if (standata$M > 1 && standata$intercept_type[2]) "yAlpha2", 
-          if (standata$M > 2 && standata$intercept_type[3]) "yAlpha3", 
-          if (standata$M > 0 && standata$yK[1]) "yBeta1", if (standata$M > 
-              1 && standata$yK[2]) "yBeta2", if (standata$M > 2 && 
-              standata$yK[3]) "yBeta3", if (is_jm) "e_alpha", if (is_jm && 
-              standata$e_K) "e_beta", if (is_jm && standata$a_K) "a_beta", 
-          if (standata$bK1 > 0) "b1", if (standata$bK2 > 0) "b2", 
-          if (standata$M > 0 && standata$has_aux[1]) "yAux1", if (standata$M > 
-              1 && standata$has_aux[2]) "yAux2", if (standata$M > 
-              2 && standata$has_aux[3]) "yAux3", if (is_jm && length(standata$basehaz_X)) "e_aux", 
-          if (standata$prior_dist_for_cov == 2 && standata$bK1 > 
-              0) "bCov1", if (standata$prior_dist_for_cov == 2 && 
-              standata$bK2 > 0) "bCov2", 'Delta', 'sigma_Delta', if (standata$prior_dist_for_cov == 
-              1 && standata$len_theta_L) "theta_L", "mean_PPD")
-  }
-  
+    
   # call stan() to draw from posterior distribution
   stanfit <- if (is_jm) stanmodels$jm else stanmodels$ltjmm
-  pars <- c(pars_to_monitor_ljtmm(standata, is_jm = is_jm))
+  pars <- pars_to_monitor(standata, is_jm = is_jm, is_ltjmm=TRUE)
   if (M == 1L) 
     cat("Fitting a univariate", if (is_jm) "joint" else "ltjmm", "model.\n\n")
   if (M  > 1L) 
