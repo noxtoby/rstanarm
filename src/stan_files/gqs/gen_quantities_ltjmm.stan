@@ -2,6 +2,23 @@ real mean_PPD[M];
 real yAlpha1[intercept_type[1] > 0];
 real yAlpha2[intercept_type[2] > 0];
 real yAlpha3[intercept_type[3] > 0];
+real yAlpha4[intercept_type[4] > 0];
+real yAlpha5[intercept_type[5] > 0];
+real yAlpha6[intercept_type[6] > 0];
+real yAlpha7[intercept_type[7] > 0];
+real yAlpha8[intercept_type[8] > 0];
+real yAlpha9[intercept_type[9] > 0];
+real yAlpha10[intercept_type[10] > 0];
+real yAlpha11[intercept_type[11] > 0];
+real yAlpha12[intercept_type[12] > 0];
+real yAlpha13[intercept_type[13] > 0];
+real yAlpha14[intercept_type[14] > 0];
+real yAlpha15[intercept_type[15] > 0];
+real yAlpha16[intercept_type[16] > 0];
+real yAlpha17[intercept_type[17] > 0];
+real yAlpha18[intercept_type[18] > 0];
+real yAlpha19[intercept_type[19] > 0];
+real yAlpha20[intercept_type[20] > 0];
 vector[prior_dist_for_cov == 2 && bK1 > 0 ? size(bCov1_idx) : 0] bCov1;
 vector[prior_dist_for_cov == 2 && bK2 > 0 ? size(bCov2_idx) : 0] bCov2;
 vector[bN1 * bK1] b1 = to_vector(bMat1'); // ensures same order as stan_glmer (make_b)
@@ -10,10 +27,44 @@ vector[bN2 * bK2] b2 = to_vector(bMat2');
 matrix[yNeta[1],yK[1]] yXlt1; // fe design matrix with latent time shift
 matrix[yNeta[2],yK[2]] yXlt2;
 matrix[yNeta[3],yK[3]] yXlt3;
+matrix[yNeta[4],yK[4]] yXlt4;
+matrix[yNeta[5],yK[5]] yXlt5;
+matrix[yNeta[6],yK[6]] yXlt6;
+matrix[yNeta[7],yK[7]] yXlt7;
+matrix[yNeta[8],yK[8]] yXlt8;
+matrix[yNeta[9],yK[9]] yXlt9;
+matrix[yNeta[10],yK[10]] yXlt10;
+matrix[yNeta[11],yK[11]] yXlt11;
+matrix[yNeta[12],yK[12]] yXlt12;
+matrix[yNeta[13],yK[13]] yXlt13;
+matrix[yNeta[14],yK[14]] yXlt14;
+matrix[yNeta[15],yK[15]] yXlt15;
+matrix[yNeta[16],yK[16]] yXlt16;
+matrix[yNeta[17],yK[17]] yXlt17;
+matrix[yNeta[18],yK[18]] yXlt18;
+matrix[yNeta[19],yK[19]] yXlt19;
+matrix[yNeta[20],yK[20]] yXlt20;
 
 vector[yK[1]] yXltbar1; // predictor (with latent time) means
 vector[yK[2]] yXltbar2;
 vector[yK[3]] yXltbar3;
+vector[yK[4]] yXltbar4;
+vector[yK[5]] yXltbar5;
+vector[yK[6]] yXltbar6;
+vector[yK[7]] yXltbar7;
+vector[yK[8]] yXltbar8;
+vector[yK[9]] yXltbar9;
+vector[yK[10]] yXltbar10;
+vector[yK[11]] yXltbar11;
+vector[yK[12]] yXltbar12;
+vector[yK[13]] yXltbar13;
+vector[yK[14]] yXltbar14;
+vector[yK[15]] yXltbar15;
+vector[yK[16]] yXltbar16;
+vector[yK[17]] yXltbar17;
+vector[yK[18]] yXltbar18;
+vector[yK[19]] yXltbar19;
+vector[yK[20]] yXltbar20;
 
 // Evaluate mean_PPD
 {

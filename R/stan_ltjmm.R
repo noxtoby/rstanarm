@@ -202,7 +202,7 @@ stan_ltjmm <- function(formula, data, lt_var = NULL, lt_formula = NULL,
   # Fit model
   #----------- 
   
-  stanfit <- stan_ltjmm.fit(formulaLong = formula, dataLong = data, 
+  stanfit <- stan_jm.fit(formulaLong = formula, dataLong = data, 
                          lt_var = lt_var, lt_term = lt_term, id_var = id_var, family = family,
                          weights = weights, priorLong = prior, 
                          priorLong_intercept = prior_intercept, priorLong_aux = prior_aux, 
