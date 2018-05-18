@@ -121,10 +121,12 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
   flevels <- get_common_flevels(y_flist)
   
   # Ensure id_var is a valid grouping factor in all submodels
-  id_var <- check_id_var(id_var, y_cnms, y_flist)
-  id_list <- check_id_list(id_var, y_flist)
-  if (!is.null(weights))
-    weights <- check_weights(weights, id_var)
+  if (is_jm | is_ltjmm) {
+    id_var <- check_id_var(id_var, y_cnms, y_flist)
+    id_list <- check_id_list(id_var, y_flist)
+    if (!is.null(weights))
+      weights <- check_weights(weights, id_var)
+  }
   
   # Observation weights
   y_weights <- lapply(y_mod, handle_weights, weights, id_var)
@@ -233,7 +235,7 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
   }
   
   # indices for latent time term
-  standata$lt_idx <- unlist(lapply(X, function(x) which(colnames(x)==lt_term)))
+  if(is_ltjmm) standata$lt_idx <- unlist(lapply(X, function(x) which(colnames(x)==lt_term)))
   
   # Data for group specific terms - group factor 1
   b1_varname <- cnms_nms[[1L]] # name of group factor 1
@@ -607,7 +609,7 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
     # Number of association parameters
     a_K <- get_num_assoc_pars(assoc, a_mod)
     
-    # Use a stan_ltjmm variational bayes model fit for:
+    # Use a stan_mvmer variational bayes model fit for:
     # - obtaining initial values for joint model parameters
     # - obtaining appropriate scaling for priors on association parameters
     vbdots <- list(...)
@@ -615,7 +617,7 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
     for (i in dropargs) 
       vbdots[[i]] <- NULL
     vbpars <- pars_to_monitor(standata, is_jm = FALSE)
-    vbargs <- c(list(stanmodels$ltjmm, pars = vbpars, data = standata, 
+    vbargs <- c(list(stanmodels$mvmer, pars = vbpars, data = standata, 
                      algorithm = "meanfield"), vbdots)
     utils::capture.output(init_fit <- do.call(rstan::vb, vbargs))
     init_new_nms <- c(y_intercept_nms, y_beta_nms,
@@ -881,8 +883,8 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
   #-----------
     
   # call stan() to draw from posterior distribution
-  stanfit <- if (is_jm) stanmodels$jm else stanmodels$ltjmm
-  pars <- pars_to_monitor(standata, is_jm = is_jm, is_ltjmm=is_ltjmm)
+  stanfit <- if (is_jm) stanmodels$jm else if(is_ltjmm) stanmodels$ltjmm else stanmodels$mvmer
+  pars <- pars_to_monitor(standata, is_jm = is_jm, is_ltjmm = is_ltjmm)
   if (M == 1L) 
     cat("Fitting a univariate", if (is_jm) "joint" else if(is_ltjmm) "ltjmm" else "mvmer", "model.\n\n")
   if (M  > 1L) 
