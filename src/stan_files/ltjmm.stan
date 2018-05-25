@@ -9,7 +9,7 @@ functions {
 #include /functions/binomial_likelihoods.stan
 #include /functions/continuous_likelihoods.stan
 #include /functions/count_likelihoods.stan
-#include /functions/ltjmm_functions.stan
+#include /functions/mvmer_functions.stan
 }
 data {
   // declares: M, has_aux, has_weights, resp_type, intercept_type,
@@ -29,6 +29,12 @@ data {
   //   b_prior_{shape,scale,concentration,regularization},
   //   b{1,2}_prior_{scale,df,regularization}
 #include /data/hyperparameters_mvmer.stan
+  
+  // sigma_lt params
+  int<lower=0,upper=2> y_prior_dist_for_sigma_lt;
+  real<lower=0> y_prior_mean_for_sigma_lt;
+  real<lower=0> y_prior_scale_for_sigma_lt;
+  real<lower=0> y_prior_df_for_sigma_lt;
 }
 transformed data {
   // declares: yHs{1,2,3}, len_{z_T,var_group,rho}, pos, delta,
@@ -43,12 +49,14 @@ parameters {
 #include /parameters/parameters_mvmer.stan
   
   // latent time shifts
+  real<lower=0> sigma_Delta_unscaled;
   vector[bN1] Delta;
-  real<lower=0> sigma_Delta;
 }
 transformed parameters { 
   // group factor 1 raw random intercepts
   matrix[bK1 >  0 ? bN1 : 0, M-1] bMat10; // random intercepts for grouping factor 1
+  
+  real<lower=0> sigma_Delta; // scale for latent time shifts
   
   // declares and defines: yBeta{1,2,3}, yAux{1,2,3}, yAuxMaximum, 
   //   theta_L, bMat{1,2}

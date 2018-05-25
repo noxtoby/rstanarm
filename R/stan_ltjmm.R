@@ -81,6 +81,7 @@
 #'   Note however that the default prior for covariance matrices in 
 #'   \code{stan_ltjmm} is slightly different to that in \code{\link{stan_glmer}} 
 #'   (the details of which are described on the \code{\link{priors}} page).
+#' @param prior_sigma_lt Same options as \code{prior_aux}.
 #' @param init The method for generating initial values. See
 #'   \code{\link[rstan]{stan}}.
 #'   
@@ -143,8 +144,8 @@
 stan_ltjmm <- function(formula, data, lt_var = NULL, lt_formula = NULL,
                        id_var = NULL, family = gaussian, weights,	
                        prior = normal(), prior_intercept = normal(), 
-                       prior_aux = cauchy(0, 5),
-                       prior_covariance = lkj(), prior_PD = FALSE, 
+                       prior_aux = cauchy(0, 5), prior_covariance = lkj(), 
+                       prior_sigma_lt = cauchy(0, 5), prior_PD = FALSE, 
                        algorithm = c("sampling", "meanfield", "fullrank"), 
                        adapt_delta = NULL, max_treedepth = 10L, 
                        init = "random", QR = FALSE, sparse = FALSE, ...) {
@@ -206,7 +207,8 @@ stan_ltjmm <- function(formula, data, lt_var = NULL, lt_formula = NULL,
                          lt_var = lt_var, lt_term = lt_term, id_var = id_var, family = family,
                          weights = weights, priorLong = prior, 
                          priorLong_intercept = prior_intercept, priorLong_aux = prior_aux, 
-                         prior_covariance = prior_covariance, prior_PD = prior_PD, 
+                         prior_covariance = prior_covariance, 
+                         prior_sigma_lt = prior_sigma_lt, prior_PD = prior_PD, 
                          algorithm = algorithm, adapt_delta = adapt_delta, 
                          max_treedepth = max_treedepth, init = init, 
                          QR = QR, sparse = sparse, ...)

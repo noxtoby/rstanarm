@@ -31,7 +31,8 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
                         priorLong = normal(), priorLong_intercept = normal(), 
                         priorLong_aux = cauchy(0, 5), priorEvent = normal(), 
                         priorEvent_intercept = normal(), priorEvent_aux = cauchy(),
-                        priorEvent_assoc = normal(), prior_covariance = lkj(), prior_PD = FALSE, 
+                        priorEvent_assoc = normal(), prior_covariance = lkj(), 
+                        prior_sigma_lt = cauchy(0, 5), prior_PD = FALSE, 
                         algorithm = c("sampling", "meanfield", "fullrank"), 
                         adapt_delta = NULL, max_treedepth = 10L, 
                         QR = FALSE, sparse = FALSE, ...) {
@@ -136,8 +137,8 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
   # Valid prior distributions
   ok_dists <- nlist("normal", student_t = "t", "cauchy", "hs", "hs_plus", 
                     "laplace", "lasso")  # disallow product normal
-  ok_intercept_dists <- ok_dists[1:20]
-  ok_aux_dists <- c(ok_dists[1:20], exponential = "exponential")
+  ok_intercept_dists <- ok_dists[1:3]
+  ok_aux_dists <- c(ok_dists[1:3], exponential = "exponential")
   ok_covariance_dists <- c("decov", "lkj")
   
   y_vecs <- fetch(y_mod, "y", "y")     # used in autoscaling
@@ -166,6 +167,11 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
   
   b_user_prior_stuff <- b_prior_stuff <- handle_cov_prior(
     prior_covariance, cnms = cnms, ok_dists = ok_covariance_dists)
+  
+  prior_sigma_lt$autoscale <- FALSE
+  y_user_prior_sigma_lt_stuff <- y_prior_sigma_lt_stuff <- handle_glm_prior(
+    prior_sigma_lt, nvars = 1, link = "identity", 
+    default_scale = 5, ok_dists = ok_aux_dists)
   
   # Autoscaling of priors
   y_prior_stuff <- 
@@ -324,7 +330,18 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
     fetch_array(y_prior_aux_stuff, "prior_scale")
   standata$y_prior_df_for_aux <- 
     fetch_array(y_prior_aux_stuff, "prior_df")
-  
+
+  if(is_ltjmm){
+    standata$y_prior_dist_for_sigma_lt <- 
+      y_prior_sigma_lt_stuff$prior_dist
+    standata$y_prior_mean_for_sigma_lt <- 
+      as.numeric(y_prior_sigma_lt_stuff$prior_mean)
+    standata$y_prior_scale_for_sigma_lt <- 
+      as.numeric(y_prior_sigma_lt_stuff$prior_scale)
+    standata$y_prior_df_for_sigma_lt <- 
+      as.numeric(y_prior_sigma_lt_stuff$prior_df)
+  }
+
   standata$y_prior_dist <- 
     fetch_array(y_prior_stuff, "prior_dist", pad_length = 20)
   
@@ -478,7 +495,7 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
     #----------- Prior distributions -----------# 
     
     # Valid prior distributions
-    ok_e_aux_dists <- ok_dists[1:20]
+    ok_e_aux_dists <- ok_dists[1:3]
   
     # Note: *_user_prior_*_stuff objects are stored unchanged for constructing 
     # prior_summary, while *_prior_*_stuff objects are autoscaled
@@ -857,6 +874,7 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
     user_priorLong = y_user_prior_stuff,
     user_priorLong_intercept = y_user_prior_intercept_stuff,
     user_priorLong_aux = y_user_prior_aux_stuff,
+#    if (is_ltjmm) user_prior_sigma_lt = y_user_prior_sigma_lt_stuff,
     if (is_jm) user_priorEvent = e_user_prior_stuff,
     if (is_jm) user_priorEvent_intercept = e_user_prior_intercept_stuff,
     if (is_jm) user_priorEvent_aux = e_user_prior_aux_stuff,

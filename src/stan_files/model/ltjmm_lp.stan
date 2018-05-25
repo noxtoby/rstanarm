@@ -40,8 +40,10 @@
   vector[yNeta[19]] yEta19;
   vector[yNeta[20]] yEta20;
   
-  sigma_Delta ~ cauchy(0, 2.5);
-  Delta ~ normal(0, sigma_Delta);
+
+  aux_lp(sigma_Delta_unscaled, y_prior_dist_for_sigma_lt,
+         y_prior_scale_for_sigma_lt, y_prior_df_for_sigma_lt);
+  target += normal_lpdf(Delta | 0, sigma_Delta);
 
   // Linear predictor for submodel 1
   if (M > 0) {
