@@ -37,7 +37,7 @@ data {
   real<lower=0> y_prior_df_for_sigma_lt;
 }
 transformed data {
-  // declares: yHs{1,2,3}, len_{z_T,var_group,rho}, pos, delta,
+  // declares: yHs{1,2,3}, len_{z_T,var_group,rho}, pos, lt,
   //   bCov{1,2}_idx, {sqrt,log,sum_log}_y{1,2,3},
 #include /tdata/tdata_mvmer.stan
 }
@@ -49,14 +49,14 @@ parameters {
 #include /parameters/parameters_mvmer.stan
   
   // latent time shifts
-  real<lower=0> sigma_Delta_unscaled;
-  vector[bN1] Delta;
+  real<lower=0> sigma_lt_unscaled;
+  vector[bN1] lt;
 }
 transformed parameters { 
   // group factor 1 raw random intercepts
   matrix[bK1 >  0 ? bN1 : 0, M-1] bMat10; // random intercepts for grouping factor 1
   
-  real<lower=0> sigma_Delta; // scale for latent time shifts
+  real<lower=0> sigma_lt; // scale for latent time shifts
   
   // declares and defines: yBeta{1,2,3}, yAux{1,2,3}, yAuxMaximum, 
   //   theta_L, bMat{1,2}

@@ -28,6 +28,7 @@ stanmvreg <- function(object) {
   M          <- object$M
   is_mvmer   <- is.mvmer(object)
   is_surv    <- is.surv(object)
+  is_ltjmm   <- is.ltjmm(object)
   is_jm      <- is.jm(object)
   stub       <- if (is_jm) "Long" else "y"
   
@@ -107,6 +108,12 @@ stanmvreg <- function(object) {
     out$glmod     <- list_nms(object$glmod, M, stub)
     out$data      <- if (!is_jm) list_nms(object$data, M, stub) else NULL
     classes <- c("stanmvreg", "stanreg", "lmerMod")
+  }
+  if (is_ltjmm) {
+    out$lt_var    <- object$lt_var
+    out$lt_term   <- object$lt_term
+    out$id_var  <- object$id_var
+    classes <- c("stanltreg", classes)
   }
   if (is_jm) {
     out$id_var    <- object$id_var

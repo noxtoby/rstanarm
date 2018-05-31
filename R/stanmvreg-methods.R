@@ -444,7 +444,20 @@ ranef.stanmvreg <- function(object, m = NULL, ...) {
     class(ans) <- c("ranef.mer")
     ans
   })
-  if (is.null(m)) list_nms(ans_list, M, stub = get_stub(object)) else ans_list[[m]]
+  if (is.null(m)) x <- list_nms(ans_list, M, stub = get_stub(object)) else x <- ans_list[[m]]
+  if(is.ltjmm(object)){
+    sel <- lt_names(all_names, sigma=FALSE, stub = object$lt_var)
+    ans <- object$stan_summary[sel, select_median(object$algorithm)]
+    # avoid returning the extra levels that were included
+    ans <- ans[!grepl("_NEW_", names(ans), fixed = TRUE)]
+    fl <- .flist(object, m = 1) 
+    levs <- lapply(fl, levels)
+    ans <- cbind(ans)
+    row.names(ans) <- levs[[1]]
+    colnames(ans) <- object$lt_var
+    x$lt <- ans
+  }
+  x
 }
 
 #' @rdname stanmvreg-methods
@@ -465,6 +478,11 @@ sigma.stanmvreg <- function(object, m = NULL, ...) {
     stop("Invalid 'm' argument.")
   }
   sel <- sapply(nms, grep, rownames(object$stan_summary), value = TRUE)
+  if(is.ltjmm(object)){
+    sel <- c(sel, rownames(object$stan_summary)[setdiff(
+        lt_names(rownames(object$stan_summary), sigma=TRUE, stub = object$lt_var),
+        lt_names(rownames(object$stan_summary), sigma=FALSE, stub = object$lt_var))])
+  }
   if (!length(sel)) 
     return(1)
   sigma <- object$stan_summary[sel, select_median(object$algorithm)]

@@ -478,7 +478,8 @@ summary.stanmvreg <- function(object, pars = NULL, regex_pars = NULL,
   M <- object$n_markers
   mvmer <- is.mvmer(object)
   surv <- is.surv(object)
-  jm <- is.jm(object)  
+  jm <- is.jm(object)
+  ltjmm <- is.ltjmm(object)  
   
   if (mvmer) {
     # Outcome variable for each longitudinal submodel
@@ -497,7 +498,13 @@ summary.stanmvreg <- function(object, pars = NULL, regex_pars = NULL,
     assoc <- list_nms(lapply(1:M, function(m) 
       sel[which(object$assoc[sel,m] == TRUE)]), M) 
   }
-  
+  if (ltjmm) {
+    # latent time scale
+    sel <- grep("^which", rownames(object$assoc), invert = TRUE, value = TRUE)
+    assoc <- list_nms(lapply(1:M, function(m) 
+      sel[which(object$assoc[sel,m] == TRUE)]), M) 
+  }
+
   # Construct summary table  
   args <- list(object = object$stanfit)
   if (!is.null(probs)) 
@@ -553,6 +560,10 @@ summary.stanmvreg <- function(object, pars = NULL, regex_pars = NULL,
     out <- structure(
       out, n_subjects = object$n_subjects, n_events = object$n_events,
       basehaz = object$basehaz) 
+  if (ltjmm)
+    out <- structure(
+      out, lt_var = object$lt_var, lt_formula = object$lt_formula, 
+      lt_term = object$lt_term, id_var = object$id_var)
   if (jm)
     out <- structure(
       out, id_var = object$id_var, time_var = object$time_var, assoc = assoc)
@@ -572,6 +583,7 @@ print.summary.stanmvreg <- function(x, digits = max(1, attr(x, "print.digits")),
   atts <- attributes(x)
   mvmer <- atts$stan_function %in% c("stan_mvmer", "stan_jm")
   jm <- atts$stan_function == "stan_jm"
+  ltjmm <- atts$stan_function == "stan_ltjmm"
   tab <- if (jm) "   " else ""
   cat("\nModel Info:\n")
   cat("\n function:   ", tab, atts$stan_function)
@@ -582,6 +594,16 @@ print.summary.stanmvreg <- function(x, digits = max(1, attr(x, "print.digits")),
       cat("\n formula", stubs[m], formula_string(atts$formula[[m]]))
       cat("\n family ", stubs[m], atts$family[[m]])
     }    
+  }
+  if (ltjmm) {
+    cat("\n latent time:", atts$lt_var)    
+  }
+  if (jm) {
+    cat("\n formula (Event):", formula_string(atts$formula[["Event"]]))
+    cat("\n baseline hazard:", atts$basehaz$type_name)
+    assoc_fmt <- unlist(lapply(1:M, function(m)
+      paste0(atts$assoc[[m]], " (Long", m, ")")))
+    cat("\n assoc:          ", paste(assoc_fmt, collapse = ", "))
   }
   if (jm) {
     cat("\n formula (Event):", formula_string(atts$formula[["Event"]]))

@@ -889,7 +889,14 @@ is.jm <- function(x) {
 #
 # @param x An object to be tested.
 is.mvmer <- function(x) {
-  isTRUE(x$stan_function %in% c("stan_mvmer", "stan_jm"))
+  isTRUE(x$stan_function %in% c("stan_mvmer", "stan_ltjmm", "stan_jm"))
+}
+
+# Test if object contains a latent time joint mixed effect model (ltjmm)
+#
+# @param x An object to be tested.
+is.ltjmm <- function(x) {
+  isTRUE(x$stan_function %in% c("stan_ltjmm"))
 }
 
 # Test if object contains a survival model
@@ -1013,6 +1020,20 @@ b_names_M <- function(x, submodel = NULL, stub = "Long", ...) {
     grep("^b\\[", x, ...)
   } else {
     grep(paste0("^b\\[", stub, submodel, "\\|"), x, ...)
+  }
+}
+
+# Grep for "latent time" parameters
+#
+# @param x Character vector (often rownames(fit$stan_summary))
+# @param submodel Optional integer specifying which long submodel
+# @param ... Passed to grep
+lt_names <- function(x, sigma = FALSE, stub = 'lt', ...) {
+  lt_nms <- grep(paste0("^", stub, "\\["), x, ...)
+  if(!sigma){
+    lt_nms
+  }else{
+    c(lt_nms, grep(paste0(stub, "\\]"), x, ...))
   }
 }
 

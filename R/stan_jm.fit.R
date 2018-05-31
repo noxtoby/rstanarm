@@ -979,14 +979,16 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
                  y_aux_nms,
                  if (is_jm) e_aux_nms,
                  paste0("Sigma[", Sigma_nms, "]"),
-                 if (is_ltjmm) c(paste0("Delta[", id_list, "]"), "Delta[_NEW_id]"),
-                 if (is_ltjmm) "sigma_Delta",
+                 if (is_ltjmm) c(paste0(lt_var, "[", id_list, "]"), paste0(lt_var, "[_NEW_id]")),
+                 if (is_ltjmm) paste0("Sigma[", id_var, ":", lt_var, "]"),
                  paste0(stub, 1:M, "|mean_PPD"),
                  "log-posterior")
 
   stanfit@sim$fnames_oi <- new_names
   
   stanfit_str <- nlist(.Data = stanfit, prior_info, y_mod, cnms, flevels)
+  if (is_ltjmm)
+    stanfit_str <- c(stanfit_str, nlist(id_var))
   if (is_jm)
     stanfit_str <- c(stanfit_str, nlist(e_mod, a_mod, assoc, basehaz, 
                                         id_var, grp_stuff))

@@ -6,3 +6,6 @@
     }
     bMat1[i, bK1_idx[M,1]] = -sum(bMat10[i,]);
   }
+  
+  sigma_lt = make_aux(sigma_lt_unscaled, y_prior_dist_for_sigma_lt,
+                      y_prior_mean_for_sigma_lt, y_prior_scale_for_sigma_lt);

@@ -331,6 +331,7 @@ summarize_jm_prior <-
   function(user_priorLong = NULL,
            user_priorLong_intercept = NULL,
            user_priorLong_aux = NULL,
+           user_prior_sigma_lt = NULL,
            user_priorEvent = NULL,
            user_priorEvent_intercept = NULL,
            user_priorEvent_aux = NULL,
@@ -418,6 +419,21 @@ summarize_jm_prior <-
           aux_name = aux_name[[m]]
         ))
       }), M, stub = stub_for_names)     
+    }
+    
+    if (!is.null(user_prior_sigma_lt)) {
+      user_prior_sigma_lt <- 
+        rename_t_and_cauchy(user_prior_sigma_lt, TRUE)     
+      prior_list$prior_sigma_lt <-
+        with(user_prior_sigma_lt, list(
+          dist = prior_dist_name,
+          location = prior_mean,
+          scale = prior_scale,
+          adjusted_scale = NULL,
+          df = if (!is.na(prior_dist_name) && 
+                   prior_dist_name %in% "student_t")
+            prior_df else NULL
+        ))      
     }
     
     if (!is.null(user_priorEvent)) {
@@ -1896,7 +1912,7 @@ pars_to_monitor <- function (standata, is_jm = FALSE, is_ltjmm = FALSE) {
     if (is_jm && length(standata$basehaz_X)) "e_aux",
     if (standata$prior_dist_for_cov == 2 && standata$bK1 > 0) "bCov1",
     if (standata$prior_dist_for_cov == 2 && standata$bK2 > 0) "bCov2",
-    if (is_ltjmm) c('Delta', 'sigma_Delta'), 
+    if (is_ltjmm) c('lt', 'sigma_lt'), 
     if (standata$prior_dist_for_cov == 1 && standata$len_theta_L) "theta_L", "mean_PPD")
 }
 

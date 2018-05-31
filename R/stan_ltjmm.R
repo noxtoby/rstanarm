@@ -224,18 +224,11 @@ stan_ltjmm <- function(formula, data, lt_var = NULL, lt_formula = NULL,
   n_grps <- sapply(flevels, n_distinct)
   
   fit <- nlist(stanfit, formula, family, weights, M, cnms, flevels, n_grps, n_yobs, 
-               algorithm, terms, glmod = y_mod, data, prior.info = prior_info, 
+               algorithm, terms, glmod = y_mod, data, 
+               lt_var, lt_formula, lt_term, id_var,
+               prior.info = prior_info, 
                stan_function = "stan_ltjmm", call = match.call(expand.dots = TRUE))
   
-  out <- stanltreg(fit)
+  out <- stanmvreg(fit)
   return(out)
 }
-
-# Test if object contains a latent time joint mixed effect model (ltjmm)
-#
-# @param x An object to be tested.
-is.ltjmm <- function(x) {
-  isTRUE(x$stan_function %in% c("stan_ltjmm"))
-}
-
-
