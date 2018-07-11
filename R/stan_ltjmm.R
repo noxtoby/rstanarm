@@ -121,7 +121,7 @@
 #'           logBili ~ I(year+lt) + (1 | id), 
 #'           albumin ~ sex + I(year+lt) + (year | id)),
 #'         data = pbcLong,
-#'         lt_var = 'lt', 
+#'         lt_var = 'lt', lt_formula = ~I(year+lt), 
 #'         # this next line is only to keep the example small in size!
 #'         chains = 1, cores = 1, seed = 12345, iter = 1000)
 #' summary(f1) 
@@ -136,7 +136,7 @@
 #'           ybern ~ I(year+lt) + (1 | id), 
 #'           albumin ~ sex + I(year+lt) + (year | id)),
 #'         data = pbcLong,
-#'         lt_var = 'lt', 
+#'         lt_var = 'lt', lt_formula = ~I(year+lt), 
 #'         family = list(binomial, gaussian),
 #'         chains = 1, cores = 1, seed = 12345, iter = 1000)
 #' }
@@ -158,6 +158,10 @@ stan_ltjmm <- function(formula, data, lt_var = NULL, lt_formula = NULL,
   
   if (missing(weights)) weights <- NULL
   
+  if (is.null(lt_var)) 
+    stop("'lt_var' must be defined (e.g. lt_var = 'lt').")
+  if (is.null(lt_formula)) 
+    stop("'lt_formula' must be defined (e.g. lt_formula = ~I(year+lt)).")
   if (!is.null(weights)) 
     stop("'weights' are not yet implemented.")
   if (QR)               
