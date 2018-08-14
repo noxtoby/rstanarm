@@ -571,7 +571,8 @@ stan_glm.fit <-
       if (!QR) 
         recommend_QR_for_vb()
     }
-    check_stanfit(stanfit)
+    check <- try(check_stanfit(stanfit))
+    if (!isTRUE(check)) return(standata)
     if (QR) {
       thetas <- extract(stanfit, pars = "beta", inc_warmup = TRUE, 
                         permuted = FALSE)
@@ -916,6 +917,7 @@ summarize_glm_prior <-
     return(prior_list)
   }
 
+# rename aux parameter based on family
 .rename_aux <- function(family) {
   fam <- family$family
   if (is.gaussian(fam)) "sigma" else
