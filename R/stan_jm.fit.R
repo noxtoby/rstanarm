@@ -112,11 +112,22 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
   
   # Construct single cnms list for all longitudinal submodels
   y_cnms  <- fetch(y_mod, "z", "group_cnms")
+  if(is_ltjmm){
+    # check that each submodel has a random intercept in expected place 
+    # (necessary for latent time zero sum constraint)
+    check_intercepts <- unlist(lapply(y_cnms, function(x) x[[1]][1]))
+    if(!all.equal(rep('(Intercept)', length(check_intercepts)), check_intercepts)){
+      stop("Problem with random effects. All submodels must include random intercept.")
+    }    
+  }
   cnms <- get_common_cnms(y_cnms, stub = stub)
   cnms_nms <- names(cnms)
   if (length(cnms_nms) > 2L)
     stop("A maximum of 2 grouping factors are allowed.")
-  
+  if(is_ltjmm){
+    if (length(cnms_nms) > 1L)
+      stop("Only 1 grouping factor is allowed.")
+  }
   # Construct single list with unique levels for each grouping factor
   y_flist <- fetch(y_mod, "z", "group_list")
   flevels <- get_common_flevels(y_flist)
