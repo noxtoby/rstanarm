@@ -175,14 +175,16 @@ stan_ltjmm <- function(formula, data, lt_var = NULL, lt_formula = NULL,
 	  stop("'stan_ltjmm' is currently limited to a maximum of 20 outcomes.")
   
   # Data
-  if(lt_var %in% names(data)){
-    stop("Remove variable '", lt_var, "' from data, or choose another character string to ", 
-      "denote latent time variable.")
-  }
-  data[, lt_var] <- 0 # insert placeholder 0s
-  lt_term <- as.character(lt_formula)[2]
   data <- validate_arg(data, "data.frame", validate_length = M)  
-  data <- xapply(formula, data, FUN = get_all_vars) # drop additional vars
+  data <- xapply(formula, data, FUN = function(f, d){
+    if(lt_var %in% names(d)){
+      stop("Remove variable '", lt_var, "' from data, or choose another character string to ", 
+        "denote latent time variable.")
+    }
+    d[lt_var] <- rep(0, length(d[[1]])) # placeholder for latent time
+    get_all_vars(f, d) # drop additional vars
+  }) 
+  lt_term <- as.character(lt_formula)[2]
   
   # Family
   ok_classes <- c("function", "family", "character")

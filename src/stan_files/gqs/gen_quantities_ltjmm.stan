@@ -74,8 +74,6 @@ vector[yK[20]] yXltbar20;
   // Linear predictor for submodel 1
   if (M > 0) {
     vector[yNeta[1]] yEta1;
-    bMat1_colshift += bK1_len[0];
-    bMat2_colshift += bK2_len[0];
     for(i in 1:yK[1]){
       yXlt1[,i] = yX1[,i];
     }

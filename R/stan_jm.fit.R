@@ -250,10 +250,10 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
   for(i in 1:20){
     standata[[paste0('yXbar', i)]] <- if (M > i-1) as.array(X_bar[[i]]) else as.array(double(0))
   }
-  
+
   # indices for latent time term
-  if(is_ltjmm) standata$lt_idx <- unlist(lapply(X, function(x) which(colnames(x)==lt_term)))
-  
+  if(is_ltjmm) standata$lt_idx <- as.array(unlist(lapply(X, function(x) which(colnames(x)==lt_term))))
+
   # Data for group specific terms - group factor 1
   b1_varname <- cnms_nms[[1L]] # name of group factor 1
   b1_nvars <- fetch_(y_mod, "z", "nvars", b1_varname, 

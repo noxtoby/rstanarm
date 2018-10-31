@@ -908,6 +908,13 @@ is.mvmer <- function(x) {
   isTRUE(x$stan_function %in% c("stan_mvmer", "stan_ltjmm", "stan_jm"))
 }
 
+# Test if object is stanmvreg class
+#
+# @param x An object to be tested.
+is.stanltreg <- function(x) {
+  inherits(x, "stanltreg")
+}
+
 # Test if object contains a latent time joint mixed effect model (ltjmm)
 #
 # @param x An object to be tested.
