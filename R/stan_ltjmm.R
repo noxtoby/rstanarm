@@ -16,12 +16,17 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-#' Bayesian multivariate generalized linear models with correlated 
-#' group-specific terms via Stan
+#' Bayesian latent time joint (multivariate) generalized linear mixed models 
+#' (LTJMM) with correlated group-specific terms via Stan
 #' 
 #' \if{html}{\figure{stanlogo.png}{options: width="25px" alt="http://mc-stan.org/about/logo/"}}
 #' Bayesian inference for multivariate GLMs with group-specific coefficients 
-#' that are assumed to be correlated across the GLM submodels.
+#' that are assumed to be correlated across the GLM submodels, and an additional 
+#' group-specific latent parameter that is shared accross outcomes and given an 
+#' outcome-specific fixed effect. The model is an extension of \code{\link{mvmer}
+#' to include the shared latent time term and its fixed effect. To allow identifiability
+#' of the latent time term, the random interecepts for each outcome are constrained 
+#' to sum to zero within a subject.
 #' 
 #' @export
 #' @template args-dots
@@ -50,7 +55,8 @@
 #'   element of the list provides the data for one of the GLM submodels.
 #' @param lt_var A character string specifying the name of the latent  
 #'   time variable (not in \code{data}) which represents the latent time
-#'   shift paramter. This variable will use same grouping 
+#'   shift paramter. This variable will use same grouping as random
+#'   effects.
 #' @param id_var A character string specifying the name of the variable in
 #'   \code{data} which distinguishes between individuals. This can be
 #'   left unspecified if there is only one grouping factor (which is assumed
@@ -109,6 +115,13 @@
 #'   \code{\link{summary.stanltreg}}, \code{\link{posterior_predict}},
 #'   \code{\link{posterior_interval}}.
 #'    
+#' @references
+#'   Li, D., Iddi, S., Thompson, W. K., Donohue, M. C., for 
+#'   the Alzheimer’s Disease Neuroimaging Initiative. (2017). 
+#'   Bayesian latent time joint mixed effect models for multicohort longitudinal data. 
+#'   \emph{Statistical methods in medical research}, 
+#'   \url{https://doi.org/10.1177/0962280217737566}.
+#'   
 #' @examples
 #' \donttest{
 #' #####
