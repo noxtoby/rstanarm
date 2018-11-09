@@ -58,7 +58,7 @@
                        y_prior_scale1, y_prior_df1, y_global_prior_scale[1],
                        yGlobal1, yLocal1, yOol1, yMix1, yAux1, family[1],
                        y_slab_scale[1], y_caux1);
-    yBeta1[lt_idx[1]] = abs(yBeta1[lt_idx[1]]);
+    yBeta1[lt_idx[1]] = fabs(yBeta1[lt_idx[1]]);
   }
   if (M > 1) {
     if (has_aux[2] == 1) {
@@ -72,7 +72,7 @@
                          y_prior_scale2, y_prior_df2, y_global_prior_scale[2],
                          yGlobal2, yLocal2, yOol2, yMix2, yAux2, family[2],
                          y_slab_scale[2], y_caux2);
-      yBeta2[lt_idx[2]] = abs(yBeta2[lt_idx[2]]);
+      yBeta2[lt_idx[2]] = fabs(yBeta2[lt_idx[2]]);
     }
   }
   if (M > 2) {
@@ -87,7 +87,7 @@
         y_prior_scale3, y_prior_df3, y_global_prior_scale[3],
         yGlobal3, yLocal3, yOol3, yMix3, yAux3, family[3],
         y_slab_scale[3], y_caux3);
-      yBeta3[lt_idx[3]] = abs(yBeta3[lt_idx[3]]);
+      yBeta3[lt_idx[3]] = fabs(yBeta3[lt_idx[3]]);
     }
   } 
   if (M > 3) {
@@ -102,7 +102,7 @@
         y_prior_scale4, y_prior_df4, y_global_prior_scale[4],
         yGlobal4, yLocal4, yOol4, yMix4, yAux4, family[4],
         y_slab_scale[4], y_caux4);
-      yBeta4[lt_idx[4]] = abs(yBeta4[lt_idx[4]]);
+      yBeta4[lt_idx[4]] = fabs(yBeta4[lt_idx[4]]);
     }
   } 
   if (M > 4) {
@@ -117,7 +117,7 @@
         y_prior_scale5, y_prior_df5, y_global_prior_scale[5],
         yGlobal5, yLocal5, yOol5, yMix5, yAux5, family[5],
         y_slab_scale[5], y_caux5);
-      yBeta5[lt_idx[5]] = abs(yBeta5[lt_idx[5]]);
+      yBeta5[lt_idx[5]] = fabs(yBeta5[lt_idx[5]]);
     }
   } 
   if (M > 5) {
@@ -132,7 +132,7 @@
         y_prior_scale6, y_prior_df6, y_global_prior_scale[6],
         yGlobal6, yLocal6, yOol6, yMix6, yAux6, family[6],
         y_slab_scale[6], y_caux6);
-      yBeta6[lt_idx[6]] = abs(yBeta6[lt_idx[6]]);
+      yBeta6[lt_idx[6]] = fabs(yBeta6[lt_idx[6]]);
     }
   } 
   if (M > 6) {
@@ -147,7 +147,7 @@
         y_prior_scale7, y_prior_df7, y_global_prior_scale[7],
         yGlobal7, yLocal7, yOol7, yMix7, yAux7, family[7],
         y_slab_scale[7], y_caux7);
-      yBeta7[lt_idx[7]] = abs(yBeta7[lt_idx[7]]);
+      yBeta7[lt_idx[7]] = fabs(yBeta7[lt_idx[7]]);
     }
   } 
   if (M > 7) {
@@ -162,7 +162,7 @@
         y_prior_scale8, y_prior_df8, y_global_prior_scale[8],
         yGlobal8, yLocal8, yOol8, yMix8, yAux8, family[8],
         y_slab_scale[8], y_caux8);
-      yBeta8[lt_idx[8]] = abs(yBeta8[lt_idx[8]]);
+      yBeta8[lt_idx[8]] = fabs(yBeta8[lt_idx[8]]);
     }
   } 
   if (M > 8) {
@@ -177,7 +177,7 @@
         y_prior_scale9, y_prior_df9, y_global_prior_scale[9],
         yGlobal9, yLocal9, yOol9, yMix9, yAux9, family[9],
         y_slab_scale[9], y_caux9);
-      yBeta9[lt_idx[9]] = abs(yBeta9[lt_idx[9]]);
+      yBeta9[lt_idx[9]] = fabs(yBeta9[lt_idx[9]]);
     }
   } 
   if (M > 9) {
@@ -192,7 +192,7 @@
         y_prior_scale10, y_prior_df10, y_global_prior_scale[10],
         yGlobal10, yLocal10, yOol10, yMix10, yAux10, family[10],
         y_slab_scale[10], y_caux10);
-      yBeta10[lt_idx[10]] = abs(yBeta10[lt_idx[10]]);
+      yBeta10[lt_idx[10]] = fabs(yBeta10[lt_idx[10]]);
     }
   } 
   if (M > 10) {
@@ -207,7 +207,7 @@
         y_prior_scale11, y_prior_df11, y_global_prior_scale[11],
         yGlobal11, yLocal11, yOol11, yMix11, yAux11, family[11],
         y_slab_scale[11], y_caux11);
-      yBeta11[lt_idx[11]] = abs(yBeta11[lt_idx[11]]);
+      yBeta11[lt_idx[11]] = fabs(yBeta11[lt_idx[11]]);
     }
   } 
   if (M > 11) {
@@ -222,7 +222,7 @@
         y_prior_scale12, y_prior_df12, y_global_prior_scale[12],
         yGlobal12, yLocal12, yOol12, yMix12, yAux12, family[12],
         y_slab_scale[12], y_caux12);
-      yBeta12[lt_idx[12]] = abs(yBeta12[lt_idx[12]]);
+      yBeta12[lt_idx[12]] = fabs(yBeta12[lt_idx[12]]);
     }
   } 
   if (M > 12) {
@@ -237,7 +237,7 @@
         y_prior_scale13, y_prior_df13, y_global_prior_scale[13],
         yGlobal13, yLocal13, yOol13, yMix13, yAux13, family[13],
         y_slab_scale[13], y_caux13);
-      yBeta13[lt_idx[13]] = abs(yBeta13[lt_idx[13]]);
+      yBeta13[lt_idx[13]] = fabs(yBeta13[lt_idx[13]]);
     }
   } 
   if (M > 13) {
@@ -252,7 +252,7 @@
         y_prior_scale14, y_prior_df14, y_global_prior_scale[14],
         yGlobal14, yLocal14, yOol14, yMix14, yAux14, family[14],
         y_slab_scale[14], y_caux14);
-      yBeta14[lt_idx[14]] = abs(yBeta14[lt_idx[14]]);
+      yBeta14[lt_idx[14]] = fabs(yBeta14[lt_idx[14]]);
     }
   } 
   if (M > 14) {
@@ -267,7 +267,7 @@
         y_prior_scale15, y_prior_df15, y_global_prior_scale[15],
         yGlobal15, yLocal15, yOol15, yMix15, yAux15, family[15],
         y_slab_scale[15], y_caux15);
-      yBeta15[lt_idx[15]] = abs(yBeta15[lt_idx[15]]);
+      yBeta15[lt_idx[15]] = fabs(yBeta15[lt_idx[15]]);
     }
   } 
   if (M > 15) {
@@ -282,7 +282,7 @@
         y_prior_scale16, y_prior_df16, y_global_prior_scale[16],
         yGlobal16, yLocal16, yOol16, yMix16, yAux16, family[16],
         y_slab_scale[16], y_caux16);
-      yBeta16[lt_idx[16]] = abs(yBeta16[lt_idx[16]]);
+      yBeta16[lt_idx[16]] = fabs(yBeta16[lt_idx[16]]);
     }
   } 
   if (M > 16) {
@@ -297,7 +297,7 @@
         y_prior_scale17, y_prior_df17, y_global_prior_scale[17],
         yGlobal17, yLocal17, yOol17, yMix17, yAux17, family[17],
         y_slab_scale[17], y_caux17);
-      yBeta17[lt_idx[17]] = abs(yBeta17[lt_idx[17]]);
+      yBeta17[lt_idx[17]] = fabs(yBeta17[lt_idx[17]]);
     }
   } 
   if (M > 17) {
@@ -312,7 +312,7 @@
         y_prior_scale18, y_prior_df18, y_global_prior_scale[18],
         yGlobal18, yLocal18, yOol18, yMix18, yAux18, family[18],
         y_slab_scale[18], y_caux18);
-      yBeta18[lt_idx[18]] = abs(yBeta18[lt_idx[18]]);
+      yBeta18[lt_idx[18]] = fabs(yBeta18[lt_idx[18]]);
     }
   } 
   if (M > 18) {
@@ -327,7 +327,7 @@
         y_prior_scale19, y_prior_df19, y_global_prior_scale[19],
         yGlobal19, yLocal19, yOol19, yMix19, yAux19, family[19],
         y_slab_scale[19], y_caux19);
-      yBeta19[lt_idx[19]] = abs(yBeta19[lt_idx[19]]);
+      yBeta19[lt_idx[19]] = fabs(yBeta19[lt_idx[19]]);
     }
   } 
   if (M > 19) {
@@ -342,7 +342,7 @@
         y_prior_scale20, y_prior_df20, y_global_prior_scale[20],
         yGlobal20, yLocal20, yOol20, yMix20, yAux20, family[20],
         y_slab_scale[20], y_caux20);
-      yBeta20[lt_idx[20]] = abs(yBeta20[lt_idx[20]]);
+      yBeta20[lt_idx[20]] = fabs(yBeta20[lt_idx[20]]);
     }
   }
 
