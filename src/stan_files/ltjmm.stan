@@ -59,11 +59,10 @@ transformed parameters {
   real<lower=0> sigma_lt; // scale for latent time shifts
   
   // declares and defines: yBeta{1,2,3}, yAux{1,2,3}, yAuxMaximum, 
-  //   theta_L, bMat{1,2}
-#include /tparameters/tparameters_mvmer.stan
-
-  // impose consraint on bMat1 such that random intercepts sum to zero for each subject
-  // this allow identifiability of latent time shift parameter
+  // theta_L, bMat{1,2}. 
+  // Also impose consraint on bMat1 such that 
+  // random intercepts sum to zero for each subject
+  // and constrain lt slope to be >=0 in yBeta.
 #include /tparameters/tparameters_ltjmm.stan
 }
 model {
