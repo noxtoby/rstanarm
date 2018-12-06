@@ -11,7 +11,7 @@ This fork of the [rstanarm](https://github.com/stan-dev/rstanarm) package includ
 1. **stan_mvmer** models are extended from 5 to 20 longitudinal submodels
 2. **stan_ljtmm** extends **stan_mvmer** to accommodate a group-specific (individual-specific) latent time parameters which are shared within group across submodels.
 
-The LTJMM is described in [Li, et al. (2018)](https://journals.sagepub.com/doi/abs/10.1177/0962280217737566).
+The LTJMM is described in [Li, et al. (2017)](https://doi.org/10.1177/0962280217737566).
 
 ### Installation
 
@@ -27,3 +27,7 @@ if (!require(devtools)) {
 }
 devtools::install_github("mcdonohue/rstanarm", build_vignettes = FALSE)
 ```
+
+## Reference
+
+* Li, D., Iddi, S., Thompson, W. K., Donohue, M. C., for ADNI. (2017). Bayesian latent time joint mixed effect models for multicohort longitudinal data. *Statistical methods in medical research*. [https://doi.org/10.1177/0962280217737566](https://doi.org/10.1177/0962280217737566)
