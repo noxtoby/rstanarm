@@ -46,7 +46,7 @@ source(test_path("helpers", "SW.R"))
 source(test_path("helpers", "get_tols.R"))
 source(test_path("helpers", "recover_pars.R"))
 
-context("stan_mvmer")
+context("stan_ltjmm")
 
 #----  Data (for non-Gaussian families)
 
@@ -61,13 +61,15 @@ pbcLong$xgamm <- as.numeric(pbcLong$logBili)
 
 #----  Models
 
-# univariate GLM
-fm1 <- logBili ~ year + (year | id)
-o<-SW(m1 <- stan_mvmer(fm1, pbcLong, iter = 10, chains = 1, seed = SEED))
+# univariate LTJMM
+fm1 <- logBili ~ I(year+lt) + (year | id)
+o<-SW(m1 <- stan_ltjmm(fm1, pbcLong, lt_var='lt', lt_formula = ~I(year+lt), 
+  iter = 10, chains = 1, seed = SEED))
 
-# multivariate GLM
-fm2 <- list(logBili ~ year + (year | id), albumin ~ year + (year | id))
-o<-SW(m2 <- stan_mvmer(fm2, pbcLong, iter = 10, chains = 1, seed = SEED))
+# multivariate LTJMM
+fm2 <- list(logBili ~  I(year+lt) + (year | id), albumin ~  I(year+lt) + (year | id))
+o<-SW(m2 <- stan_ltjmm(fm2, pbcLong, lt_var='lt', lt_formula = ~I(year+lt), 
+  iter = 10, chains = 1, seed = SEED))
 
 #----  Tests for stan_mvmer arguments
 
@@ -117,103 +119,51 @@ test_that("error message occurs for arguments not implemented", {
   expect_error(update(m1, sparse = TRUE), "not yet implemented")
 })
 
-#----  Check models with multiple grouping factors
-
-test_that("multiple grouping factors are ok", {
-  
-  tmpdat <- pbcLong
-  tmpdat$practice <- cut(pbcLong$id, c(0,10,20,30,40))
-  
-  tmpfm1 <- logBili ~ year + (year | id) + (1 | practice)
-  SW(ok_mod1 <- update(m1, formula. = tmpfm1, data = tmpdat, iter = 1, refresh = 0, init = 0))
-  expect_stanmvreg(ok_mod1)
-  
-  tmpfm2 <- list(
-    logBili ~ year + (year | id) + (1 | practice),
-    albumin ~ year + (year | id))
-  SW(ok_mod2 <- update(m2, formula. = tmpfm2, data = tmpdat, iter = 1, refresh = 0, init = 0))
-  expect_stanmvreg(ok_mod2)
-  
-  tmpfm3 <- list(
-    logBili ~ year + (year | id) + (1 | practice),
-    albumin ~ year + (year | id) + (1 | practice))
-  SW(ok_mod3 <- update(m2, formula. = tmpfm3, data = tmpdat, iter = 1, refresh = 0, init = 0))
-  expect_stanmvreg(ok_mod3)
-  
-  # check reordering grouping factors is ok
-  # NB it seems these comparisons must be made using init = 0 and one iteration,
-  # probably because the order of the parameters passed to Stan affects the 
-  # sequence of MCMC samples even when the same seed is used. An alternative
-  # would be to test equality of the stanmat colMeans with specified tolerance?
-  tmpfm4 <- list(
-    logBili ~ year + (1 | practice) + (year | id),
-    albumin ~ year + (year | id))
-  SW(ok_mod4 <- update(ok_mod2, formula. = tmpfm4))
-  expect_identical_sorted_stanmats(ok_mod2, ok_mod4)
-
-  tmpfm5 <- list(
-    logBili ~ year + (1 | practice) + (year | id),
-    albumin ~ year + (year | id) + (1 | practice))
-  SW(ok_mod5 <- update(ok_mod3, formula. = tmpfm5))
-  expect_identical_sorted_stanmats(ok_mod3, ok_mod5)
-  
-  tmpfm6 <- list(
-    logBili ~ year + (1 | practice) + (year | id),
-    albumin ~ year + (1 | practice) + (year | id))
-  SW(ok_mod6 <- update(ok_mod3, formula. = tmpfm6))
-  expect_identical_sorted_stanmats(ok_mod3, ok_mod6)
-})
-
-#----  Compare estimates: univariate stan_mvmer vs stan_glmer
+#----  Compare estimates: univariate stan_ltjmm vs stan_glmer
 
 if (interactive()) {
-  compare_glmer <- function(fmLong, fam = gaussian, ...) {
-    SW(y1 <- stan_glmer(fmLong, pbcLong, fam, iter = 1000, chains = CHAINS, seed = SEED))
-    SW(y2 <- stan_mvmer(fmLong, pbcLong, fam, iter = 1000, chains = CHAINS, seed = SEED, ...))
-    tols <- get_tols(y1, tolscales = TOLSCALES)
-    pars <- recover_pars(y1)
-    pars2 <- recover_pars(y2)
-    for (i in names(tols$fixef))
-      expect_equal(pars$fixef[[i]], pars2$fixef[[i]], tol = tols$fixef[[i]])     
-    for (i in names(tols$ranef))
-      expect_equal(pars$ranef[[i]], pars2$ranef[[i]], tol = tols$ranef[[i]])
-    expect_equal(colMeans(log_lik(y1)), 
-                 colMeans(log_lik(y2)), tol = 0.15)
-    nd <- pbcLong[stats::complete.cases(pbcLong), , drop = FALSE]
-    expect_equal(colMeans(log_lik(y1, newdata = nd)), 
-                 colMeans(log_lik(y2, newdata = nd)), tol = 0.15)
-  }
-  test_that("coefs same for stan_jm and stan_lmer/coxph", {
-    compare_glmer(logBili ~ year + (1 | id), gaussian)})
-  # fails in some cases
-  # test_that("coefs same for stan_jm and stan_glmer, bernoulli", {
-  #   compare_glmer(ybern ~ year + xbern + (1 | id), binomial)})
-  test_that("coefs same for stan_jm and stan_glmer, poisson", {
-    compare_glmer(ypois ~ year + xpois + (1 | id), poisson, init = 0)})
-  test_that("coefs same for stan_jm and stan_glmer, negative binomial", {
-    compare_glmer(ynbin ~ year + xpois + (1 | id), neg_binomial_2)})
+  test_that("coefs same for stan_glmer and stan_ltjmm", {
+    SW(y1 <- stan_glmer(logBili ~ scale(year) + (1 | id), pbcLong, iter = 1000, 
+      chains = CHAINS, seed = SEED))
+    SW(y2 <- stan_ltjmm(logBili ~ I(scale(year)+lt) + (1 | id), pbcLong, iter = 1000, 
+      chains = CHAINS, seed = SEED, lt_var='lt', lt_formula = ~I(scale(year)+lt)))
+    expect_equivalent(fixef(y1), fixef(y2)$y1, tol=0.4)
+    expect_equal(colMeans(log_lik(y1)), colMeans(log_lik(y2)), tol = 5)
+  })
+  test_that("coefs same for stan_glmer and stan_ltjmm, poisson", {
+    SW(y1 <- stan_glmer(ypois ~ scale(year) + xpois + (1 | id), pbcLong, poisson, 
+      init = 0, iter = 1000, chains = CHAINS, seed = SEED))
+    SW(y2 <- stan_ltjmm(ypois ~ I(scale(year)+lt) + xpois + (1 | id), pbcLong, family=poisson, 
+      iter = 1000, chains = CHAINS, seed = SEED, lt_var='lt', lt_formula = ~I(scale(year)+lt)))
+    expect_equivalent(fixef(y1), fixef(y2)$y1, tol=0.03)
+    expect_equal(colMeans(log_lik(y1)), colMeans(log_lik(y2)), tol = 0.03)
+  })
+  test_that("coefs same for stan_glmer and stan_ltjmm, negative binomial", {
+    SW(y1 <- stan_glmer(ynbin ~ scale(year) + xpois + (1 | id), pbcLong, neg_binomial_2, 
+      init = 0, iter = 1000, chains = CHAINS, seed = SEED))
+    SW(y2 <- stan_ltjmm(ynbin ~ I(scale(year)+lt) + xpois + (1 | id), pbcLong, family=neg_binomial_2, 
+      iter = 1000, chains = CHAINS, seed = SEED, lt_var='lt', lt_formula = ~I(scale(year)+lt)))
+    expect_equivalent(fixef(y1), fixef(y2)$y1, tol=0.04)
+    expect_equal(colMeans(log_lik(y1)), colMeans(log_lik(y2)), tol = 0.02)
+  })
   test_that("coefs same for stan_jm and stan_glmer, Gamma", {
-    compare_glmer(ygamm ~ year + xgamm + (1 | id), Gamma(log))})
-#  test_that("coefs same for stan_jm and stan_glmer, inverse gaussian", {
-#    compare_glmer(ygamm ~ year + xgamm + (1 | id), inverse.gaussian)})  
+    # compare_glmer(ygamm ~ year + xgamm + (1 | id), Gamma(log))
+    SW(y1 <- stan_glmer(ygamm ~ scale(year) + xgamm + (1 | id), pbcLong, Gamma(log), 
+      init = 0, iter = 1000, chains = CHAINS, seed = SEED))
+    SW(y2 <- stan_ltjmm(ygamm ~ I(scale(year)+lt) + xgamm + (1 | id), pbcLong, family=Gamma(log), 
+      iter = 1000, chains = CHAINS, seed = SEED, lt_var='lt', lt_formula = ~I(scale(year)+lt)))
+    expect_equivalent(fixef(y1), fixef(y2)$y1, tol=0.1)
+    expect_equal(colMeans(log_lik(y1)), colMeans(log_lik(y2)), tol = 0.5)
+  })
 }
 
 #----  Check methods and post-estimation functions
 
 tmpdat <- pbcLong
-tmpdat$practice <- cut(pbcLong$id, c(0,10,20,30,40))
 
-o<-SW(f1 <- update(m1, formula. = list(logBili ~ year + (year | id)), data = tmpdat))
-o<-SW(f2 <- update(f1, formula. = list(logBili ~ year + (year | id) + (1 | practice))))
-o<-SW(f3 <- update(m2, formula. = list(logBili ~ year + (year | id) + (1 | practice),
-                                       albumin ~ year + (year | id)), data = tmpdat))
-o<-SW(f4 <- update(f3, formula. = list(logBili ~ year + (year | id) + (1 | practice),
-                                       albumin ~ year + (year | id) + (1 | practice))))
-o<-SW(f5 <- update(f3, formula. = list(logBili ~ year + (year | id) + (1 | practice),
-                                       ybern ~ year + (year | id) + (1 | practice)),
-                   family = list(gaussian, binomial)))
+o<-SW(f1 <- update(m1, formula. = list(logBili ~ I(year+lt) + (year | id)), data = tmpdat))
 
-for (j in 1:5) {
+for (j in 1) {
   mod <- get(paste0("f", j))
   cat("Checking model:", paste0("f", j), "\n")
 
@@ -237,6 +187,7 @@ for (j in 1:5) {
   })   
   
   nd <- tmpdat[tmpdat$id == 2,]
+  nd$lt <- 0
   test_that("posterior_predict works with new data (one individual)", {
     pp <- posterior_predict(mod, m = 1, newdata = nd)
     expect_ppd(pp)
@@ -257,6 +208,7 @@ for (j in 1:5) {
   }) 
   
   nd <- tmpdat[tmpdat$id %in% c(1,2),]
+  nd$lt <- 0
   test_that("posterior_predict works with new data (multiple individuals)", {
     pp <- posterior_predict(mod, m = 1, newdata = nd)
     expect_ppd(pp)

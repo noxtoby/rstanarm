@@ -112,11 +112,22 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
   
   # Construct single cnms list for all longitudinal submodels
   y_cnms  <- fetch(y_mod, "z", "group_cnms")
+  if(is_ltjmm){
+    # check that each submodel has a random intercept in expected place 
+    # (necessary for latent time zero sum constraint)
+    check_intercepts <- unlist(lapply(y_cnms, function(x) x[[1]][1]))
+    if(!all.equal(rep('(Intercept)', length(check_intercepts)), check_intercepts)){
+      stop("Problem with random effects. All submodels must include random intercept.")
+    }    
+  }
   cnms <- get_common_cnms(y_cnms, stub = stub)
   cnms_nms <- names(cnms)
   if (length(cnms_nms) > 2L)
     stop("A maximum of 2 grouping factors are allowed.")
-  
+  if(is_ltjmm){
+    if (length(cnms_nms) > 1L)
+      stop("Only 1 grouping factor is allowed.")
+  }
   # Construct single list with unique levels for each grouping factor
   y_flist <- fetch(y_mod, "z", "group_list")
   flevels <- get_common_flevels(y_flist)
@@ -239,10 +250,10 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
   for(i in 1:20){
     standata[[paste0('yXbar', i)]] <- if (M > i-1) as.array(X_bar[[i]]) else as.array(double(0))
   }
-  
+
   # indices for latent time term
-  if(is_ltjmm) standata$lt_idx <- unlist(lapply(X, function(x) which(colnames(x)==lt_term)))
-  
+  if(is_ltjmm) standata$lt_idx <- as.array(unlist(lapply(X, function(x) which(colnames(x)==lt_term))))
+
   # Data for group specific terms - group factor 1
   b1_varname <- cnms_nms[[1L]] # name of group factor 1
   b1_nvars <- fetch_(y_mod, "z", "nvars", b1_varname, 
@@ -880,6 +891,8 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
     if (is_jm) user_priorEvent_aux = e_user_prior_aux_stuff,
     if (is_jm) user_priorEvent_assoc = e_user_prior_assoc_stuff,
     user_prior_covariance = prior_covariance,
+    b_user_prior_stuff = b_user_prior_stuff,
+    b_prior_stuff = b_prior_stuff,
     y_has_intercept = fetch_(y_mod, "x", "has_intercept"),
     y_has_predictors = fetch_(y_mod, "x", "K") > 0,
     if (is_jm) e_has_intercept = standata$e_has_intercept,
@@ -893,7 +906,8 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
     if (is_jm) adjusted_priorEvent_aux_scale = e_prior_aux_stuff$prior_scale,
     if (is_jm) adjusted_priorEvent_assoc_scale = e_prior_assoc_stuff$prior_scale,
     family = family, 
-    if (is_jm) basehaz = basehaz
+    if (is_jm) basehaz = basehaz,
+    stub_for_names = if (is_jm) "Long" else "y"
   )  
   
   #-----------
@@ -925,7 +939,8 @@ stan_jm.fit <- function(formulaLong = NULL, dataLong = NULL, formulaEvent = NULL
     stanfit <- rstan::vb(stanfit, pars = pars, data = standata,
                          algorithm = algorithm, ...)    
   }
-  check_stanfit(stanfit)
+  check <- check_stanfit(stanfit)
+  if (!isTRUE(check)) return(standata)
 
   # Sigma values in stanmat
   if (prior_covariance$dist == "decov" && standata$len_theta_L)

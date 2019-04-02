@@ -16,12 +16,17 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-#' Bayesian multivariate generalized linear models with correlated 
-#' group-specific terms via Stan
+#' Bayesian latent time joint (multivariate) generalized linear mixed models 
+#' (LTJMM) with correlated group-specific terms via Stan
 #' 
 #' \if{html}{\figure{stanlogo.png}{options: width="25px" alt="http://mc-stan.org/about/logo/"}}
 #' Bayesian inference for multivariate GLMs with group-specific coefficients 
-#' that are assumed to be correlated across the GLM submodels.
+#' that are assumed to be correlated across the GLM submodels, and an additional 
+#' group-specific latent parameter that is shared accross outcomes and given an 
+#' outcome-specific fixed effect. The model is an extension of \code{\link{mvmer}}
+#' to include the shared latent time term and its fixed effect. To allow identifiability
+#' of the latent time term, the random interecepts for each outcome are constrained 
+#' to sum to zero within a subject.
 #' 
 #' @export
 #' @template args-dots
@@ -48,9 +53,12 @@
 #'   be either a single data frame which contains the data for all 
 #'   GLM submodels, or it can be a list of data frames where each
 #'   element of the list provides the data for one of the GLM submodels.
-#' @param lt_var A character string specifying the name of the latent  
+#' @param lt_var A character string (e.g. \code{lt}) specifying the name of the latent  
 #'   time variable (not in \code{data}) which represents the latent time
-#'   shift paramter. This variable will use same grouping 
+#'   shift paramter. This variable will use same grouping as random
+#'   effects.
+#' @param lt_formula A formula defining the term which will be given a nonnegative
+#'   fixed effect term (e.g. \code{~I(year+lt)}).
 #' @param id_var A character string specifying the name of the variable in
 #'   \code{data} which distinguishes between individuals. This can be
 #'   left unspecified if there is only one grouping factor (which is assumed
@@ -108,7 +116,13 @@
 #'   \code{\link{stanltreg-methods}}, \code{\link{print.stanltreg}}, 
 #'   \code{\link{summary.stanltreg}}, \code{\link{posterior_predict}},
 #'   \code{\link{posterior_interval}}.
-#'    
+#' 
+#' @references Li, D., Iddi, S., Thompson, W. K., Donohue, M. C., for 
+#'   the Alzheimer's Disease Neuroimaging Initiative. (2017). 
+#'   Bayesian latent time joint mixed effect models for multicohort longitudinal data. 
+#'   \emph{Statistical methods in medical research}, 
+#'   \url{https://doi.org/10.1177/0962280217737566}.
+#' 
 #' @examples
 #' \donttest{
 #' #####
@@ -175,14 +189,16 @@ stan_ltjmm <- function(formula, data, lt_var = NULL, lt_formula = NULL,
 	  stop("'stan_ltjmm' is currently limited to a maximum of 20 outcomes.")
   
   # Data
-  if(lt_var %in% names(data)){
-    stop("Remove variable '", lt_var, "' from data, or choose another character string to ", 
-      "denote latent time variable.")
-  }
-  data[, lt_var] <- 0 # insert placeholder 0s
-  lt_term <- as.character(lt_formula)[2]
   data <- validate_arg(data, "data.frame", validate_length = M)  
-  data <- xapply(formula, data, FUN = get_all_vars) # drop additional vars
+  data <- xapply(formula, data, FUN = function(f, d){
+    if(lt_var %in% names(d)){
+      stop("Remove variable '", lt_var, "' from data, or choose another character string to ", 
+        "denote latent time variable.")
+    }
+    d[lt_var] <- rep(0, length(d[[1]])) # placeholder for latent time
+    get_all_vars(f, d) # drop additional vars
+  }) 
+  lt_term <- as.character(lt_formula)[2]
   
   # Family
   ok_classes <- c("function", "family", "character")
